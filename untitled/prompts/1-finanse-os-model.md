@@ -157,7 +157,7 @@ Encja istnieje po to, żeby model od początku wspierał wielu użytkowników.
 Przykład:
 
 ```text
-id: 1
+id: 1f
 name: Jakub
 email: example@example.com
 

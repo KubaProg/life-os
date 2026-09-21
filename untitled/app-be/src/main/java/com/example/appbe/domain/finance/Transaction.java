@@ -23,8 +23,7 @@ import java.time.LocalDate;
 @Table(
         name = "transactions",
         indexes = {
-                @Index(name = "idx_transactions_user_id", columnList = "user_id"),
-                @Index(name = "idx_transactions_financial_account_id", columnList = "financial_account_id")
+                @Index(name = "idx_transactions_user_id", columnList = "user_id")
         }
 )
 public class Transaction {
