@@ -1,0 +1,73 @@
+<main class="finance-shell">
+  <section class="finance" aria-labelledby="page-title">
+    <header class="finance__header">
+      <div>
+        <a class="back-link" routerLink="/">← Centrum dowodzenia</a>
+        <p class="eyebrow">Finanse</p>
+        <h1 id="page-title">Twój obraz finansów</h1>
+        <p class="intro">Wrzesień 2026 · wszystkie środki w jednym widoku</p>
+      </div>
+      <p-button label="Dodaj transakcję" icon="pi pi-plus" />
+    </header>
+
+    <section class="balance-card" aria-label="Łączny stan środków">
+      <div>
+        <p class="balance-card__label">Łącznie na kontach</p>
+        <strong>{{ totalBalance | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+        <span class="balance-card__note">+{{ monthlyBalance | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl-PL' }} w tym miesiącu</span>
+      </div>
+      <div class="balance-card__ring" aria-hidden="true"><span>4</span> konta</div>
+    </section>
+
+    <section class="metrics" aria-label="Podsumowanie miesiąca">
+      <p-card>
+        <p class="metric__label">Przychody</p>
+        <strong class="metric metric--positive">+{{ income | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+        <small>we wrześniu</small>
+      </p-card>
+      <p-card>
+        <p class="metric__label">Wydatki</p>
+        <strong class="metric metric--negative">−{{ expenses | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+        <small>we wrześniu</small>
+      </p-card>
+      <p-card>
+        <p class="metric__label">Bilans miesiąca</p>
+        <strong class="metric">{{ monthlyBalance | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+        <small>35% przychodów odłożone</small>
+      </p-card>
+    </section>
+
+    <div class="dashboard-grid">
+      <section class="panel accounts-panel" aria-labelledby="accounts-title">
+        <div class="panel__heading"><div><p class="eyebrow">Konta</p><h2 id="accounts-title">Twoje środki</h2></div><button type="button" class="text-button">Zarządzaj kontami</button></div>
+        <div class="accounts-list">
+          @for (account of accounts; track account.name) {
+            <a class="account" [routerLink]="['/finanse/konta', account.id]">
+              <span class="account__mark" [style.background]="account.color">{{ account.name.charAt(0) }}</span>
+              <div><h3>{{ account.name }}</h3><p>{{ account.institution }} · {{ account.type }}</p></div>
+              <strong>{{ account.balance | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+            </a>
+          }
+        </div>
+      </section>
+
+      <section class="panel types-panel" aria-labelledby="types-title">
+        <div class="panel__heading"><div><p class="eyebrow">Struktura</p><h2 id="types-title">Według typu konta</h2></div></div>
+        <div class="type-chart" aria-label="Podział środków według typu konta">
+          @for (account of accounts; track account.type) {
+            <div class="type-row"><span class="type-row__dot" [style.background]="account.color"></span><span>{{ account.type }}</span><div class="type-row__bar"><i [style.width.%]="account.balance / totalBalance * 100" [style.background]="account.color"></i></div><strong>{{ account.balance / totalBalance * 100 | number: '1.0-0' }}%</strong></div>
+          }
+        </div>
+      </section>
+    </div>
+
+    <section class="panel transactions-panel" aria-labelledby="transactions-title">
+      <div class="panel__heading"><div><p class="eyebrow">Historia</p><h2 id="transactions-title">Ostatnie transakcje</h2></div><button type="button" class="text-button">Zobacz wszystkie</button></div>
+      <div class="transactions-list">
+        @for (transaction of transactions; track transaction.name) {
+          <article class="transaction"><span class="transaction__icon">{{ transaction.icon }}</span><div><h3>{{ transaction.name }}</h3><p>{{ transaction.category }} · {{ transaction.date | date: 'd MMMM' : undefined : 'pl-PL' }}</p></div><strong [class.transaction__amount--positive]="transaction.amount > 0">{{ transaction.amount > 0 ? '+' : '−' }}{{ (transaction.amount < 0 ? -transaction.amount : transaction.amount) | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
+        }
+      </div>
+    </section>
+  </section>
+</main>

@@ -33,7 +33,7 @@
           <div class="tile__content"><h2>{{ tile.title }}</h2><p>{{ tile.description }}</p></div>
 
           <ng-template #footer>
-            <p-button class="tile__action" [label]="tile.active ? 'Otwórz sekcję →' : 'W przygotowaniu'" [disabled]="!tile.active" [text]="true" severity="secondary" />
+            <p-button class="tile__action" [label]="tile.active ? 'Otwórz sekcję →' : 'W przygotowaniu'" [disabled]="!tile.active" [routerLink]="tile.active ? tile.route : null" [text]="true" severity="secondary" />
           </ng-template>
         </p-card>
       }

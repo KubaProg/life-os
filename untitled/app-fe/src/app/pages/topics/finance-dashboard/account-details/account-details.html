@@ -1,0 +1,42 @@
+<main class="account-shell">
+  @if (account(); as selectedAccount) {
+    <section class="account-page" aria-labelledby="page-title">
+      <a class="back-link" routerLink="/finanse">← Wszystkie finanse</a>
+
+      <header class="account-header">
+        <div class="account-heading">
+          <span class="account-mark" [style.background]="selectedAccount.color">{{ selectedAccount.name.charAt(0) }}</span>
+          <div><p class="eyebrow">{{ selectedAccount.institution }} · {{ selectedAccount.type }}</p><h1 id="page-title">{{ selectedAccount.name }}</h1><p class="account-number">{{ selectedAccount.accountNumber }}</p></div>
+        </div>
+        <div class="header-actions"><p-button label="Edytuj konto" [outlined]="true" severity="secondary" /><p-button label="Dodaj transakcję" icon="pi pi-plus" /></div>
+      </header>
+
+      <section class="balance-card" aria-label="Aktualne saldo konta">
+        <p>Aktualne saldo</p>
+        <strong>{{ selectedAccount.balance | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+        <span>Stan na dziś</span>
+      </section>
+
+      <section class="summary-grid" aria-label="Statystyki konta za bieżący miesiąc">
+        <article><p>Przychody we wrześniu</p><strong class="positive">+{{ monthlyIncome() | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
+        <article><p>Wydatki we wrześniu</p><strong class="negative">−{{ monthlyExpenses() | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
+        <article><p>Transakcje</p><strong>{{ transactions().length }}</strong><span>w tym miesiącu</span></article>
+      </section>
+
+      <section class="transactions-panel" aria-labelledby="transactions-title">
+        <div class="section-heading"><div><p class="eyebrow">Historia konta</p><h2 id="transactions-title">Ostatnie transakcje</h2></div><button type="button" class="text-button">Filtruj</button></div>
+        @if (transactions().length) {
+          <div class="transactions-list">
+            @for (transaction of transactions(); track transaction.id) {
+              <article class="transaction"><span class="transaction-icon">{{ transaction.icon }}</span><div><h3>{{ transaction.name }}</h3><p>{{ transaction.category }} · {{ transaction.date | date: 'd MMMM' : undefined : 'pl-PL' }}</p></div><strong [class.positive]="transaction.amount > 0">{{ transaction.amount > 0 ? '+' : '−' }}{{ (transaction.amount < 0 ? -transaction.amount : transaction.amount) | currency: 'PLN' : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
+            }
+          </div>
+        } @else {
+          <div class="empty-state"><span aria-hidden="true">○</span><h3>Brak transakcji na tym koncie</h3><p>Dodaj pierwszą transakcję, aby zobaczyć historię i statystyki.</p><p-button label="Dodaj transakcję" [outlined]="true" /></div>
+        }
+      </section>
+    </section>
+  } @else {
+    <section class="not-found"><h1>Nie znaleziono tego konta</h1><p>Wybrane konto nie istnieje lub zostało usunięte.</p><p-button label="Wróć do finansów" routerLink="/finanse" /></section>
+  }
+</main>
