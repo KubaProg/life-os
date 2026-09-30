@@ -1,4 +1,4 @@
-package com.example.appbe.domain.finance;
+package com.example.appbe.finance.transaction;
 
 public enum TransactionType {
     INCOME,

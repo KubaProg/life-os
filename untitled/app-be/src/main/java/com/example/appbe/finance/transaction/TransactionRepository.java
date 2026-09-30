@@ -1,4 +1,4 @@
-package com.example.appbe.domain.finance;
+package com.example.appbe.finance.transaction;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

@@ -1,4 +1,4 @@
-package com.example.appbe.domain.user;
+package com.example.appbe.user;
 
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

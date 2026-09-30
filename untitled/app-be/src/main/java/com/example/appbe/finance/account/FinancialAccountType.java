@@ -1,4 +1,4 @@
-package com.example.appbe.domain.finance;
+package com.example.appbe.finance.account;
 
 public enum FinancialAccountType {
     BANK_ACCOUNT,

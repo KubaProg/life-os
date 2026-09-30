@@ -523,6 +523,22 @@ W V1 system może być single-user, ale warto nie projektować modelu tak, aby u
 - Spring Data JPA,
 - później Spring AI.
 
+### Spring Security - etap późniejszy
+
+Pierwsze lokalne etapy Finance Core działają świadomie w trybie single-user, bez logowania i bez tymczasowej abstrakcji bieżącego użytkownika. Nie należy teraz dodawać `CurrentUserProvider` ani rozprowadzać prowizorycznego `userId = 1` po kontrolerach.
+
+Spring Security powinno zostać dodane przed udostępnieniem aplikacji poza zaufanym środowiskiem lokalnym oraz przed wprowadzeniem wielu użytkowników. Wtedy należy:
+
+- dodać uwierzytelnianie użytkownika,
+- pobierać tożsamość użytkownika z `SecurityContext`, a nie z `userId` przesłanego przez frontend,
+- ograniczyć każde zapytanie finansowe do danych zalogowanego użytkownika,
+- sprawdzać własność kont, transakcji, aktywów, zobowiązań, celów i scenariuszy,
+- zwracać poprawne odpowiedzi `401 Unauthorized` i `403 Forbidden`,
+- dodać testy prób odczytu oraz modyfikacji danych innego użytkownika,
+- ustalić sposób uwierzytelniania frontendu oraz politykę sesji, CSRF i CORS.
+
+Wybór logowania sesyjnego, JWT albo zewnętrznego dostawcy tożsamości pozostaje decyzją na moment wdrażania security. Uprawnienia agenta `READ` / `WRITE` / `SENSITIVE` są dodatkową warstwą kontroli i nie zastępują Spring Security.
+
 ### Baza
 
 - PostgreSQL,

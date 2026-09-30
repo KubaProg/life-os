@@ -19,7 +19,15 @@ Poza zakresem V1 zostają:
 - konkretne instrumenty inwestycyjne,
 - liczba jednostek ETF/akcji,
 - ceny instrumentów,
-- szczegółowy portfel inwestycyjny.
+- szczegółowy portfel inwestycyjny,
+- przeliczanie wartości pomiędzy walutami i integracja z API kursów walut.
+
+## 1.1. Przyjęte decyzje techniczne
+
+- pozostajemy przy zaimplementowanej bazie MySQL,
+- saldo konta jest wyliczane z wartości początkowej i transakcji, a nie przechowywane jako niezależne `currentBalance`,
+- V1 może przechowywać konta i transakcje w różnych walutach, ale nie sumuje ich do jednej łącznej wartości,
+- przeliczanie walut zostanie dodane później na podstawie zewnętrznego API kursów.
 
 ## 2. Encje V1
 
@@ -79,7 +87,8 @@ Pola:
 - name
 - type
 - currency
-- currentBalance
+- openingBalance
+- balanceStartDate
 - active
 - createdAt
 - updatedAt
@@ -98,7 +107,10 @@ Założenia implementacyjne:
 - `name` jest wymagane,
 - `type` powinien być enumem,
 - `currency` można przechowywać jako trzyliterowy kod waluty, np. `PLN`, `EUR`, `USD`,
-- `currentBalance` powinien używać `BigDecimal`,
+- `openingBalance` powinien używać `BigDecimal` i oznacza saldo początkowe, od którego aplikacja zaczyna prowadzić historię,
+- `balanceStartDate` określa dzień, od którego transakcje wpływają na wyliczane saldo,
+- bieżące saldo nie jest osobnym źródłem prawdy; aplikacja wylicza je jako `openingBalance` plus wpływ transakcji od `balanceStartDate`,
+- edycja lub usunięcie wcześniejszej transakcji automatycznie zmienia wyliczone saldo bez dodatkowej synchronizacji pola na koncie,
 - `active` pozwala ukrywać stare konta bez usuwania historii,
 - w V1 konto przechowuje jedną zbiorczą wartość, bez rozbijania na instrumenty.
 
@@ -133,15 +145,19 @@ Założenia implementacyjne:
 - `financialAccount` może być opcjonalne, ale dla większości transakcji powinno być ustawione,
 - `amount` powinien używać `BigDecimal`,
 - `currency` powinna być zgodna z kontem, jeśli konto jest ustawione,
+- transakcja wpływająca na saldo musi wskazywać konto finansowe,
+- wpływ na saldo powinien być jednoznaczny: `INCOME` zwiększa saldo, a `EXPENSE` je zmniejsza,
 - `transactionDate` oznacza datę faktycznej transakcji,
 - `createdAt` i `updatedAt` oznaczają daty techniczne rekordu,
 - `category` na start może być zwykłym tekstem, bez osobnej encji.
 
 ## 6. Baza danych
 
-Docelowa baza danych:
+Używana baza danych:
 
-- PostgreSQL
+- MySQL
+
+Projekt pozostaje przy obecnie zaimplementowanym silniku. Migracje Flyway i testy integracyjne powinny używać składni oraz obrazu MySQL zgodnych z wersją uruchamianą przez Docker Compose.
 
 Tabele V1:
 
@@ -163,6 +179,7 @@ Ograniczenia:
 
 - email użytkownika powinien być unikalny,
 - kwoty nie powinny być null,
+- saldo początkowe i data początkowa konta nie powinny być null,
 - typy enumów nie powinny być null,
 - waluta nie powinna być null,
 - nazwa konta nie powinna być pusta.
@@ -195,7 +212,8 @@ Na tym etapie nie trzeba jeszcze tworzyć rozbudowanej logiki domenowej. Wystarc
 Model danych powinien umożliwiać:
 
 - pobranie wszystkich aktywnych kont użytkownika,
-- policzenie sumy wartości kont użytkownika,
+- wyliczenie salda każdego konta jako wartości początkowej skorygowanej o transakcje,
+- policzenie sumy wartości kont użytkownika osobno dla każdej waluty,
 - pobranie wartości środków per konto,
 - pogrupowanie kont według typu,
 - pobranie ostatnich transakcji użytkownika,
@@ -205,36 +223,54 @@ Model danych powinien umożliwiać:
 
 Te agregacje powinny należeć do aplikacji, nie do agenta AI.
 
+Przykładowa reguła dla podstawowych typów:
+
+```text
+saldo konta = openingBalance
+             + suma(INCOME od balanceStartDate)
+             - suma(EXPENSE od balanceStartDate)
+```
+
+Transfery i korekty wymagają osobnych, jawnych reguł wpływu na saldo. Do czasu ich ustalenia nie powinny być uwzględniane przez domysł oparty wyłącznie na znaku kwoty.
+
 ## 9. Kolejność implementacji
 
-1. Sprawdzić aktualną strukturę backendu Spring Boot.
-2. Dodać zależności dla Spring Data JPA i PostgreSQL, jeśli ich brakuje.
-3. Skonfigurować połączenie z PostgreSQL w lokalnym środowisku.
-4. Dodać encję `User`.
-5. Dodać enum i encję `FinancialAccount`.
-6. Dodać enum i encję `Transaction`.
-7. Dodać repozytoria JPA.
-8. Dodać migrację tworzącą tabele.
-9. Dodać przykładowe dane startowe dla jednego użytkownika i kilku kont.
-10. Dodać podstawowe testy repozytoriów albo test kontekstu JPA.
+1. Zachować obecną konfigurację Spring Data JPA, Flyway i MySQL.
+2. Ujednolicić konfigurację MySQL pomiędzy aplikacją i plikami Docker Compose.
+3. Zmienić model konta z `currentBalance` na `openingBalance` i `balanceStartDate` w nowej migracji Flyway.
+4. Zaktualizować encję `FinancialAccount` i dane developerskie.
+5. Dodać zapytania wyliczające wpływ transakcji na saldo konta.
+6. Dodać serwis zwracający wyliczone saldo zamiast wystawiać encję JPA bezpośrednio.
+7. Dodać agregacje dashboardu osobno dla każdej waluty.
+8. Dodać testy edycji i usunięcia transakcji potwierdzające natychmiastową zmianę salda.
+9. Dodać testy repozytoriów i testy integracyjne na MySQL.
 
-## 10. Decyzje do odłożenia
+## 10. Decyzje przyjęte i odłożone
+
+Decyzje przyjęte:
+
+- baza danych: MySQL,
+- źródło prawdy salda: `openingBalance` oraz transakcje,
+- brak przeliczania walut w V1,
+- agregacje wielu walut są zwracane oddzielnie, bez tworzenia mylącej sumy łącznej.
 
 Na późniejsze etapy zostają:
 
 - czy kategorie transakcji będą osobną encją,
 - czy transfer będzie jedną transakcją czy parą transakcji,
-- jak obsługiwać wiele walut w łącznej wartości majątku,
+- wybór API kursów walut, przechowywanie kursów i przeliczanie do waluty bazowej,
 - jak modelować inwestycje i instrumenty finansowe,
-- jak aktualizować `currentBalance` konta na podstawie transakcji,
 - czy historia salda konta będzie osobną tabelą,
 - jak agent AI będzie wywoływał operacje na danych przez toolsy.
 
 ## 11. Kryterium gotowości V1
 
-Model danych V1 jest gotowy, gdy aplikacja potrafi zapisać w PostgreSQL:
+Model danych V1 jest gotowy, gdy aplikacja potrafi zapisać w MySQL:
 
 - użytkownika,
 - kilka kont finansowych użytkownika,
 - transakcje przypisane do użytkownika i opcjonalnie konta,
-- dane wystarczające do zbudowania prostego dashboardu finansowego.
+- dane wystarczające do zbudowania prostego dashboardu finansowego,
+- wartość początkową konta i datę rozpoczęcia historii,
+- dane pozwalające wyliczyć aktualne saldo po dodaniu, edycji albo usunięciu transakcji,
+- podsumowania rozdzielone według waluty, bez automatycznego przeliczania.

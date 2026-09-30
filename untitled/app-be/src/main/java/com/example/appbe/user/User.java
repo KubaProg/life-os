@@ -1,7 +1,7 @@
-package com.example.appbe.domain.user;
+package com.example.appbe.user;
 
-import com.example.appbe.domain.finance.FinancialAccount;
-import com.example.appbe.domain.finance.Transaction;
+import com.example.appbe.finance.account.FinancialAccount;
+import com.example.appbe.finance.transaction.Transaction;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

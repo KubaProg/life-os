@@ -1,6 +1,6 @@
-package com.example.appbe.domain.finance;
+package com.example.appbe.finance.account;
 
-import com.example.appbe.domain.user.User;
+import com.example.appbe.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -21,12 +21,12 @@ import java.time.LocalDate;
 
 @Entity
 @Table(
-        name = "transactions",
+        name = "financial_accounts",
         indexes = {
-                @Index(name = "idx_transactions_user_id", columnList = "user_id")
+                @Index(name = "idx_financial_accounts_user_id", columnList = "user_id"),
         }
 )
-public class Transaction {
+public class FinancialAccount {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,28 +36,24 @@ public class Transaction {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "financial_account_id")
-    private FinancialAccount financialAccount;
+    @Column(nullable = false)
+    private String name;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
-    private TransactionType type;
-
-    @Column(nullable = false, precision = 19, scale = 4)
-    private BigDecimal amount;
+    private FinancialAccountType type;
 
     @Column(nullable = false, length = 3)
     private String currency;
 
-    @Column(name = "transaction_date", nullable = false)
-    private LocalDate transactionDate;
+    @Column(name = "opening_balance", nullable = false, precision = 19, scale = 4)
+    private BigDecimal openingBalance = BigDecimal.ZERO;
 
-    @Column(length = 500)
-    private String description;
+    @Column(name = "balance_start_date", nullable = false)
+    private LocalDate balanceStartDate;
 
-    @Column(length = 100)
-    private String category;
+    @Column(nullable = false)
+    private boolean active = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -65,23 +61,23 @@ public class Transaction {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected Transaction() {
+    protected FinancialAccount() {
     }
 
-    public Transaction(
+    public FinancialAccount(
             User user,
-            FinancialAccount financialAccount,
-            TransactionType type,
-            BigDecimal amount,
+            String name,
+            FinancialAccountType type,
             String currency,
-            LocalDate transactionDate
+            BigDecimal openingBalance,
+            LocalDate balanceStartDate
     ) {
         this.user = user;
-        this.financialAccount = financialAccount;
+        this.name = name;
         this.type = type;
-        this.amount = amount;
         this.currency = currency;
-        this.transactionDate = transactionDate;
+        this.openingBalance = openingBalance;
+        this.balanceStartDate = balanceStartDate;
     }
 
     @PrePersist
@@ -108,28 +104,20 @@ public class Transaction {
         this.user = user;
     }
 
-    public FinancialAccount getFinancialAccount() {
-        return financialAccount;
+    public String getName() {
+        return name;
     }
 
-    public void setFinancialAccount(FinancialAccount financialAccount) {
-        this.financialAccount = financialAccount;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public TransactionType getType() {
+    public FinancialAccountType getType() {
         return type;
     }
 
-    public void setType(TransactionType type) {
+    public void setType(FinancialAccountType type) {
         this.type = type;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
     }
 
     public String getCurrency() {
@@ -140,28 +128,28 @@ public class Transaction {
         this.currency = currency;
     }
 
-    public LocalDate getTransactionDate() {
-        return transactionDate;
+    public BigDecimal getOpeningBalance() {
+        return openingBalance;
     }
 
-    public void setTransactionDate(LocalDate transactionDate) {
-        this.transactionDate = transactionDate;
+    public void setOpeningBalance(BigDecimal openingBalance) {
+        this.openingBalance = openingBalance;
     }
 
-    public String getDescription() {
-        return description;
+    public LocalDate getBalanceStartDate() {
+        return balanceStartDate;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setBalanceStartDate(LocalDate balanceStartDate) {
+        this.balanceStartDate = balanceStartDate;
     }
 
-    public String getCategory() {
-        return category;
+    public boolean isActive() {
+        return active;
     }
 
-    public void setCategory(String category) {
-        this.category = category;
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     public Instant getCreatedAt() {

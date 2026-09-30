@@ -13,3 +13,9 @@
 - Preferuj komponenty PrimeNG, jeśli biblioteka ma odpowiedni komponent (np. Button, Card, Dialog, Drawer, Table, Tag, Menu, Input).
 - Dla struktury dokumentu, prostych list, nagłówków i elementów stricte semantycznych używaj zwykłego HTML i CSS.
 - Zachowuj spójność z istniejącym motywem Aura i konfiguracją PrimeNG; nie twórz zastępczego komponentu, jeśli PrimeNG oferuje właściwy element.
+
+## Weryfikacja backendu
+
+- Nie uruchamiaj poleceń Maven ani Maven Wrapper (`mvn`, `mvnw`, `mvnw.cmd`) w tym projekcie.
+- Nie pobieraj zależności Maven i nie proś o dostęp sieciowy w celu uruchomienia testów backendu.
+- Przy małych refaktorach Javy opieraj weryfikację na przeglądzie zmian, spójności pakietów i wyszukiwaniu nieaktualnych referencji.
