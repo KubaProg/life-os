@@ -2,6 +2,8 @@ package com.example.appbe.finance.account;
 
 import com.example.appbe.exception.AccountNotFoundException;
 import com.example.appbe.exception.UnsupportedAccountTypeException;
+import com.example.appbe.finance.transaction.TransactionMapper;
+import com.example.appbe.finance.transaction.TransactionRepository;
 import com.example.appbe.user.User;
 import com.example.appbe.user.UserRepository;
 import java.util.EnumSet;
@@ -24,27 +26,50 @@ public class AccountService {
     private final FinancialAccountRepository accountRepository;
     private final UserRepository userRepository;
     private final AccountMapper accountMapper;
+    private final AccountBalanceService accountBalanceService;
+    private final TransactionRepository transactionRepository;
+    private final TransactionMapper transactionMapper;
 
     public AccountService(
             FinancialAccountRepository accountRepository,
             UserRepository userRepository,
-            AccountMapper accountMapper
+            AccountMapper accountMapper,
+            AccountBalanceService accountBalanceService,
+            TransactionRepository transactionRepository,
+            TransactionMapper transactionMapper
     ) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.accountMapper = accountMapper;
+        this.accountBalanceService = accountBalanceService;
+        this.transactionRepository = transactionRepository;
+        this.transactionMapper = transactionMapper;
     }
 
     public List<AccountDto> getActiveAccounts() {
-        return accountRepository.findByActiveTrueOrderByNameAsc().stream()
-                .map(accountMapper::toDto)
+        return accountRepository.findByUserIdAndActiveTrueOrderByNameAsc(LOCAL_USER_ID).stream()
+                .map(this::toDto)
                 .toList();
     }
 
     public AccountDto getActiveAccount(Long accountId) {
-        return accountRepository.findByIdAndActiveTrue(accountId)
-                .map(accountMapper::toDto)
-                .orElseThrow(() -> new AccountNotFoundException(accountId));
+        return toDto(getActiveAccountEntity(accountId));
+    }
+
+    public AccountDetailsDto getActiveAccountDetails(Long accountId) {
+        FinancialAccount account = getActiveAccountEntity(accountId);
+
+        return new AccountDetailsDto(
+                toDto(account),
+                transactionRepository
+                        .findByUserIdAndFinancialAccountIdOrderByTransactionDateDescCreatedAtDesc(
+                                LOCAL_USER_ID,
+                                accountId
+                        )
+                        .stream()
+                        .map(transactionMapper::toDto)
+                        .toList()
+        );
     }
 
     @Transactional
@@ -60,7 +85,8 @@ public class AccountService {
                 request.balanceStartDate()
         );
 
-        return accountMapper.toDto(accountRepository.save(account));
+        FinancialAccount savedAccount = accountRepository.save(account);
+        return accountMapper.toDto(savedAccount, savedAccount.getOpeningBalance());
     }
 
     @Transactional
@@ -69,8 +95,7 @@ public class AccountService {
             validateAccountType(request.type());
         }
 
-        FinancialAccount account = accountRepository.findByIdAndActiveTrue(accountId)
-                .orElseThrow(() -> new AccountNotFoundException(accountId));
+        FinancialAccount account = getActiveAccountEntity(accountId);
 
         if (request.name() != null) {
             account.setName(request.name().trim());
@@ -82,12 +107,21 @@ public class AccountService {
             account.setCurrency(request.currency());
         }
 
-        return accountMapper.toDto(account);
+        return toDto(account);
     }
 
     private void validateAccountType(FinancialAccountType type) {
         if (!SUPPORTED_ACCOUNT_TYPES.contains(type)) {
             throw new UnsupportedAccountTypeException(type);
         }
+    }
+
+    private FinancialAccount getActiveAccountEntity(Long accountId) {
+        return accountRepository.findByIdAndUserIdAndActiveTrue(accountId, LOCAL_USER_ID)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
+    }
+
+    private AccountDto toDto(FinancialAccount account) {
+        return accountMapper.toDto(account, accountBalanceService.calculateCurrentBalance(account));
     }
 }

@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { AccountDto, AccountRequest, UpdateAccountRequest } from '../models/account.model';
+import {
+  AccountDetailsDto,
+  AccountDto,
+  AccountRequest,
+  UpdateAccountRequest
+} from '../models/account.model';
 
 @Injectable({ providedIn: 'root' })
 export class AccountApiService {
@@ -13,8 +18,8 @@ export class AccountApiService {
     return this.http.get<AccountDto[]>(this.accountsUrl);
   }
 
-  getAccount(accountId: number): Observable<AccountDto> {
-    return this.http.get<AccountDto>(`${this.accountsUrl}/${accountId}`);
+  getAccount(accountId: number): Observable<AccountDetailsDto> {
+    return this.http.get<AccountDetailsDto>(`${this.accountsUrl}/${accountId}`);
   }
 
   createAccount(request: AccountRequest): Observable<AccountDto> {

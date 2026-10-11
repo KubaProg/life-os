@@ -26,17 +26,42 @@
       <section class="balance-card" aria-label="Aktualne saldo konta">
         <p>Aktualne saldo</p>
         <strong>{{ selectedAccount.currentBalance | currency: selectedAccount.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
-        <span>Na tym etapie saldo jest równe saldu początkowemu.</span>
+        <span>Saldo początkowe wraz z zapisanymi przychodami i wydatkami.</span>
       </section>
 
-      <section class="transactions-panel unavailable-panel" aria-labelledby="transactions-title">
+      <section class="transactions-panel" aria-labelledby="transactions-title">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Historia konta</p>
             <h2 id="transactions-title">Transakcje</h2>
           </div>
         </div>
-        <p>Historia i statystyki konta będą dostępne po wdrożeniu rzeczywistych transakcji.</p>
+        @if (!transactions().length) {
+          <div class="empty-transactions">
+            <h3>Brak transakcji na tym koncie</h3>
+            <p>Nowe przychody i wydatki możesz dodać z głównego ekranu finansów.</p>
+          </div>
+        } @else {
+          <div class="transactions-list">
+            @for (transaction of transactions(); track transaction.id) {
+              <article class="transaction">
+                <span class="transaction__icon" [class.transaction__icon--income]="transaction.type === 'INCOME'" aria-hidden="true">
+                  {{ transaction.type === 'INCOME' ? '↙' : '↗' }}
+                </span>
+                <div class="transaction__details">
+                  <h3>{{ transaction.category }}</h3>
+                  <p>{{ transaction.transactionDate | date: 'd MMMM y' : undefined : 'pl-PL' }}</p>
+                  @if (transaction.description) {
+                    <span>{{ transaction.description }}</span>
+                  }
+                </div>
+                <strong [class.transaction__amount--income]="transaction.type === 'INCOME'">
+                  {{ transaction.type === 'INCOME' ? '+' : '−' }}{{ transaction.amount | currency: transaction.currency : 'symbol' : '1.2-2' : 'pl-PL' }}
+                </strong>
+              </article>
+            }
+          </div>
+        }
       </section>
     </section>
   } @else if (loadState() === 'not-found') {

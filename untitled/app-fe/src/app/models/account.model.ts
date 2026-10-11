@@ -32,3 +32,8 @@ export interface UpdateAccountRequest {
   type?: OrdinaryAccountType;
   currency?: string;
 }
+
+export interface AccountDetailsDto {
+  account: AccountDto;
+  transactions: ReadonlyArray<import('./transaction.model').TransactionDto>;
+}

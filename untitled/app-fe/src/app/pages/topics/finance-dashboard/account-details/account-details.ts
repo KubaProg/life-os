@@ -9,6 +9,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { catchError, map, of, switchMap } from 'rxjs';
 
 import { AccountDto } from '../../../../models/account.model';
+import { TransactionDto } from '../../../../models/transaction.model';
 import { AccountApiService } from '../../../../services/account-api.service';
 import { accountTypeColor, accountTypeLabel } from '../account-display';
 
@@ -33,6 +34,7 @@ export class AccountDetails {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly account = signal<AccountDto | null>(null);
+  protected readonly transactions = signal<ReadonlyArray<TransactionDto>>([]);
   protected readonly loadState = signal<AccountLoadState>('loading');
   protected readonly accountTypeColor = accountTypeColor;
   protected readonly accountTypeLabel = accountTypeLabel;
@@ -43,6 +45,7 @@ export class AccountDetails {
         map((params) => Number(params.get('accountId'))),
         switchMap((accountId) => {
           this.account.set(null);
+          this.transactions.set([]);
           this.loadState.set('loading');
 
           if (!Number.isInteger(accountId) || accountId <= 0) {
@@ -59,9 +62,10 @@ export class AccountDetails {
         }),
         takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe((account) => {
-        if (account) {
-          this.account.set(account);
+      .subscribe((details) => {
+        if (details) {
+          this.account.set(details.account);
+          this.transactions.set(details.transactions);
           this.loadState.set('ready');
         }
       });

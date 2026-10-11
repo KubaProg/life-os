@@ -13,6 +13,8 @@ public interface FinancialAccountRepository extends JpaRepository<FinancialAccou
 
     Optional<FinancialAccount> findByIdAndActiveTrue(Long id);
 
+    Optional<FinancialAccount> findByIdAndUserIdAndActiveTrue(Long id, Long userId);
+
     List<FinancialAccount> findByUserIdAndActiveTrueOrderByNameAsc(Long userId);
 
     List<FinancialAccount> findByUserIdAndType(Long userId, FinancialAccountType type);

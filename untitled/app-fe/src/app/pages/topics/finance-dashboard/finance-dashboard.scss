@@ -3,6 +3,8 @@
 .finance { width: min(100%, 74rem); margin: 0 auto; }
 .finance__header, .panel__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .finance__header { margin-bottom: 2rem; }
+.quick-actions { position: sticky; z-index: 10; top: calc(.75rem + env(safe-area-inset-top, 0px)); display: flex; justify-content: flex-end; margin: -4.75rem 0 1.25rem; pointer-events: none; }
+.quick-actions p-button { pointer-events: auto; }
 .back-link { color: #456652; font-size: .85rem; font-weight: 700; text-decoration: none; }
 .back-link:hover, .back-link:focus-visible { color: #183f2b; }
 .eyebrow { margin: 1.75rem 0 .45rem; color: #5a7164; font-size: .72rem; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }
@@ -30,12 +32,41 @@ h2 { margin-bottom: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); }
 .state { display: grid; min-height: 10rem; place-items: center; align-content: center; gap: 1rem; padding: 1.5rem; color: #68766c; text-align: center; }
 .state h3, .state p { margin-bottom: 0; }
 .state--loading { min-height: 8rem; }
-.unavailable-panel > p:last-child { max-width: 44rem; margin: 1rem 0 0; color: #68766c; line-height: 1.6; }
+.state--compact { min-height: 7rem; }
+.transactions-list { margin-top: 1.25rem; }
+.transaction { display: grid; min-height: 4.5rem; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .85rem; padding: .9rem 0; border-top: 1px solid #e8ede7; }
+.transaction__icon { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border-radius: 50%; background: #f3ded8; color: #8b3d2d; font-size: 1.15rem; font-weight: 800; }
+.transaction__icon--income { background: #dcecdf; color: #24603b; }
+.transaction__details { min-width: 0; }
+.transaction h3 { margin-bottom: .18rem; font-size: 1rem; }
+.transaction p, .transaction__details span { margin-bottom: 0; color: #778179; font-size: .78rem; }
+.transaction__details span { display: block; overflow: hidden; margin-top: .25rem; text-overflow: ellipsis; white-space: nowrap; }
+.transaction > strong { color: #8b3d2d; font-size: .9rem; text-align: right; white-space: nowrap; }
+.transaction > .transaction__amount--income { color: #24603b; }
+.transaction-form { display: grid; gap: 1rem; padding-top: .25rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-field { display: grid; min-width: 0; gap: .4rem; }
+.form-field label { color: #33483b; font-size: .86rem; font-weight: 700; }
+.form-field label span { color: #7b857e; font-weight: 400; }
+.form-field input, .form-field textarea { width: 100%; }
+.form-field small { color: #b42318; font-size: .76rem; }
+.form-actions { display: flex; justify-content: flex-end; gap: .75rem; padding-top: .5rem; }
+:host ::ng-deep .form-field .p-select,
+:host ::ng-deep .form-field .p-inputnumber,
+:host ::ng-deep .form-field .p-datepicker { width: 100%; }
+:host ::ng-deep .p-dialog-content { overflow: visible; }
 
 @media (max-width: 480px) {
   .finance-shell { padding-inline: 1rem; }
+  .finance__header { margin-bottom: 1.25rem; }
+  .quick-actions { top: calc(.5rem + env(safe-area-inset-top, 0px)); margin: 0 0 1rem; }
   .balance-card { align-items: flex-start; flex-direction: column; }
   .balance-card__ring { width: 5.5rem; height: 5.5rem; }
   .account { grid-template-columns: auto minmax(0, 1fr); }
   .account strong { grid-column: 2; text-align: left; }
+  .transaction { grid-template-columns: auto minmax(0, 1fr); }
+  .transaction > strong { grid-column: 2; text-align: left; }
+  .form-row { grid-template-columns: 1fr; }
+  .form-actions { display: grid; grid-template-columns: 1fr; }
+  :host ::ng-deep .form-actions .p-button { width: 100%; min-height: 2.75rem; }
 }

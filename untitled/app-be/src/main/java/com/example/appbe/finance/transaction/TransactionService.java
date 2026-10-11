@@ -1,0 +1,90 @@
+package com.example.appbe.finance.transaction;
+
+import com.example.appbe.exception.AccountNotFoundException;
+import com.example.appbe.exception.TransactionBeforeBalanceStartDateException;
+import com.example.appbe.exception.UnsupportedTransactionTypeException;
+import com.example.appbe.finance.account.FinancialAccount;
+import com.example.appbe.finance.account.FinancialAccountRepository;
+import com.example.appbe.finance.overview.FinanceOverviewService;
+import com.example.appbe.user.User;
+import com.example.appbe.user.UserRepository;
+import java.util.EnumSet;
+import java.util.Set;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class TransactionService {
+
+    private static final Long LOCAL_USER_ID = 1L;
+    private static final Set<TransactionType> SUPPORTED_TYPES = EnumSet.of(
+            TransactionType.INCOME,
+            TransactionType.EXPENSE
+    );
+
+    private final TransactionRepository transactionRepository;
+    private final FinancialAccountRepository accountRepository;
+    private final UserRepository userRepository;
+    private final TransactionMapper transactionMapper;
+    private final FinanceOverviewService overviewService;
+
+    public TransactionService(
+            TransactionRepository transactionRepository,
+            FinancialAccountRepository accountRepository,
+            UserRepository userRepository,
+            TransactionMapper transactionMapper,
+            FinanceOverviewService overviewService
+    ) {
+        this.transactionRepository = transactionRepository;
+        this.accountRepository = accountRepository;
+        this.userRepository = userRepository;
+        this.transactionMapper = transactionMapper;
+        this.overviewService = overviewService;
+    }
+
+    @Transactional
+    public TransactionCreatedResponse createTransaction(TransactionRequest request) {
+        validateType(request.type());
+
+        FinancialAccount account = accountRepository
+                .findByIdAndUserIdAndActiveTrue(request.accountId(), LOCAL_USER_ID)
+                .orElseThrow(() -> new AccountNotFoundException(request.accountId()));
+
+        if (request.transactionDate().isBefore(account.getBalanceStartDate())) {
+            throw new TransactionBeforeBalanceStartDateException(account.getBalanceStartDate());
+        }
+
+        User user = userRepository.getReferenceById(LOCAL_USER_ID);
+        Transaction transaction = new Transaction(
+                user,
+                account,
+                request.type(),
+                request.amount(),
+                account.getCurrency(),
+                request.transactionDate(),
+                request.category().trim(),
+                trimToNull(request.description())
+        );
+
+        Transaction savedTransaction = transactionRepository.save(transaction);
+
+        return new TransactionCreatedResponse(
+                transactionMapper.toDto(savedTransaction),
+                overviewService.getOverview()
+        );
+    }
+
+    private void validateType(TransactionType type) {
+        if (!SUPPORTED_TYPES.contains(type)) {
+            throw new UnsupportedTransactionTypeException(type);
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return value.trim();
+    }
+}

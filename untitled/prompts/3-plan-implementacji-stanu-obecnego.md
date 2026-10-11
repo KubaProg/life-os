@@ -31,11 +31,34 @@ Ukończone:
 - [x] kontroler zwraca `AccountDto`, a nie encję JPA,
 - [x] brak konta aktywnego zwraca `404 Not Found`,
 - [x] pakiet `exception` zawiera bazowy `BusinessException`, wspólny `ApiError` i globalny `@RestControllerAdvice`,
-- [x] pojedynczy handler obsługuje wszystkie wyjątki biznesowe na podstawie ich statusu i kodu.
+- [x] pojedynczy handler obsługuje wszystkie wyjątki biznesowe na podstawie ich statusu i kodu,
+- [x] błędy `@Valid` są mapowane do wspólnego `ApiError` z kodem `VALIDATION_FAILED`,
+- [x] migracja Flyway V3 tworzy lokalnego użytkownika `id = 1` oraz przykładowe zwykłe konta,
+- [x] dodane tworzenie konta przez `POST /api/finance/accounts`,
+- [x] dodana częściowa edycja nazwy, typu i waluty przez `PATCH /api/finance/accounts/{accountId}`,
+- [x] create i update akceptują wyłącznie `BANK_ACCOUNT`, `SAVINGS` i `CASH`,
+- [x] mapowanie `FinancialAccount` → `AccountDto` zostało wydzielone do `AccountMapper`,
+- [x] Angular posiada `AccountApiService` oraz modele kontraktu API,
+- [x] dashboard i szczegóły konta pobierają rzeczywiste dane z backendu,
+- [x] widoki odczytu obsługują loading, empty, error i `404`,
+- [x] mockowane metryki i transakcje nie są prezentowane obok rzeczywistych kont,
+- [x] proxy Angular dev-servera przekazuje `/api` do backendu na porcie 8080,
+- [x] responsywność widoków odczytu sprawdzona przy 320 px, 480 px i 1280 px,
+- [x] frontend opakowany w natywną aplikację Android przez Capacitor 8,
+- [x] aplikacja Android uruchomiona w emulatorze i zainstalowana na fizycznym telefonie z debug APK,
+- [x] backend posiada tymczasowy globalny CORS `*` dla `/api/**` bez credentials,
+- [x] dodane tworzenie przychodów i wydatków przez `POST /api/finance/transactions`,
+- [x] bieżące saldo konta jest liczone z salda początkowego i transakcji,
+- [x] `GET /api/finance/overview` zwraca sumy per waluta, konta i wspólną historię,
+- [x] szczegóły konta zwracają konto wraz z jego historią transakcji,
+- [x] Angular posiada lekki `FinanceStore` oparty na Signals,
+- [x] dashboard posiada przypiętą akcję, modal dodawania transakcji i rzeczywistą historię.
 
 Aktualny krok:
 
-- [ ] przygotowanie zapisu zwykłych kont: create, update i archive.
+- [ ] ręcznie zweryfikować pełny przepływ transakcji z uruchomionym backendem,
+- [ ] dodać edycję istniejącej transakcji przez przycisk z ikoną i modal,
+- [ ] po edycji aktualizować snapshot, salda i historie bez dodatkowego odświeżania strony.
 
 ### Checkpoint — koniec sesji 2026-09-30
 
@@ -49,6 +72,47 @@ GET /api/finance/accounts/{accountId}
 Odczyt działa przez `AccountController` → `AccountService` → `FinancialAccountRepository`. Publiczny kontrakt stanowi `AccountDto`; encja JPA nie jest zwracana przez API. Wyjątki biznesowe dziedziczą po `BusinessException` i są mapowane przez jeden `GlobalExceptionHandler` do `ApiError` zawierającego status HTTP, kod błędu, komunikat i ścieżkę.
 
 Endpointy pozostają tymczasowo nieuwierzytelnione i zwracają aktywne konta bez filtrowania właściciela. Jest to świadomie zaakceptowane wyłącznie dla lokalnego trybu single-user. Następna sesja powinna rozpocząć się od `AccountRequest` oraz endpointu tworzenia konta, a następnie osobno dodać update i archive.
+
+### Checkpoint — koniec sesji 2026-10-01
+
+Backend kont obsługuje obecnie:
+
+```text
+GET   /api/finance/accounts
+POST  /api/finance/accounts
+GET   /api/finance/accounts/{accountId}
+PATCH /api/finance/accounts/{accountId}
+```
+
+`AccountRequest` waliduje wymagane dane tworzonego konta, a `UpdateAccountRequest` pozwala częściowo zmienić nazwę, typ lub walutę. Pusty request aktualizacji jest dozwolonym no-op. Pierwszy zakres nadal akceptuje wyłącznie `BANK_ACCOUNT`, `SAVINGS` i `CASH`; pozostałe typy zwracają biznesowy błąd `UNSUPPORTED_ACCOUNT_TYPE`. Mapowanie encji na odpowiedź wykonuje osobny `AccountMapper`.
+
+Lokalny tryb single-user używa użytkownika `id = 1`. Migracja `V3__seed_local_finance_data.sql` tworzy tego użytkownika oraz trzy przykładowe konta. Nie dodano profilu `local` ani tymczasowej abstrakcji bieżącego użytkownika.
+
+Frontend posiada `AccountApiService` dla listy, szczegółów, create i update oraz modele TypeScript zgodne z kontraktem backendu. Dashboard i ekran szczegółów korzystają już z rzeczywistego read API. Salda na dashboardzie są grupowane według waluty bez ich przeliczania. Widoki obsługują loading, empty, error i `404`; sekcje zależne od transakcji są oznaczone jako niedostępne zamiast prezentowania mocków. Stary `FinanceDataService` pozostaje w repozytorium, ale nie jest już używany przez komponenty.
+
+Angular dev-server korzysta z `proxy.conf.json`, który przekazuje `/api` do `http://localhost:8080`. Build frontendu zakończył się poprawnie, a layout sprawdzono przy 320 px, 480 px i 1280 px. Testów automatycznych nie dodawano zgodnie z decyzją użytkownika. Nie uruchamiano Mavena ani Maven Wrappera.
+
+Następne małe paczki powinny objąć osobno archiwizację konta, frontendowy formularz create/update oraz podłączenie tych operacji do UI.
+
+### Checkpoint — Android i powrót do feature'ów 2026-10-11
+
+Frontend posiada zależności Capacitor `8.5.3`, konfigurację `capacitor.config.ts` oraz natywny projekt w `app-fe/android`. Produkcyjny build Angulara jest kopiowany z `dist/app-fe/browser`. Aplikacja została poprawnie uruchomiona w emulatorze, a wygenerowany debug APK został zainstalowany i uruchomiony na fizycznym telefonie.
+
+`AccountApiService` nadal korzysta z relatywnego `/api`. Publiczny URL backendu i komunikacja z API zainstalowanej aplikacji zostały świadomie odłożone; nie blokują dalszej implementacji funkcji ani sprawdzania samego interfejsu na Androidzie. Backend ma tymczasową globalną konfigurację CORS dla `/api/**`, dopuszczającą wszystkie originy, metody i nagłówki bez credentials. Przed udostępnieniem backendu konfiguracja powinna zostać zawężona.
+
+Od tego checkpointu ponownie skupiamy się na Etapie 1 planu finansowego: archiwizacji konta oraz formularzu create/update. Po zmianach frontendu wersję Android można odświeżyć przez `npm run android:sync`; przygotowanie publicznego HTTPS API pozostaje osobnym późniejszym zadaniem infrastrukturalnym.
+
+### Checkpoint — pierwszy pionowy wycinek transakcji 2026-10-11
+
+Zarządzanie kontami oraz security zostały świadomie odłożone. Aplikacja nadal działa jako local single-user z użytkownikiem `id = 1` i korzysta z kont seedowanych w bazie.
+
+Backend obsługuje tworzenie `INCOME` i `EXPENSE`, waliduje dodatnią kwotę, aktywne konto oraz datę nie wcześniejszą niż `balanceStartDate`. Waluta transakcji wynika z konta. `currentBalance` jest liczony jako saldo początkowe plus wpływ transakcji. Endpoint overview zwraca jeden snapshot z sumami kont pogrupowanymi według waluty, aktualnymi kontami i historią wszystkich transakcji. Odpowiedź zapisu zawiera utworzoną transakcję i kompletny odświeżony snapshot.
+
+Frontend używa `FinanceApiService` do HTTP oraz współdzielonego `FinanceStore` opartego na natywnych Angular Signals. Store żyje w pamięci instancji aplikacji; po pełnym odświeżeniu ponownie pobiera dane. Dashboard ma przypięty przycisk „Dodaj transakcję”, modal PrimeNG z Reactive Forms oraz wspólną historię. Szczegóły konta pobierają aktualne saldo i historię danego konta jednym requestem.
+
+Build produkcyjny Angulara przechodzi. Backend nie był kompilowany Mavenem zgodnie z zasadami repozytorium; wymagane pozostaje ręczne sprawdzenie po ponownym uruchomieniu backendu.
+
+Następnym zaakceptowanym wycinkiem jest edycja transakcji. Każda pozycja na wspólnej historii oraz w szczegółach konta ma otrzymać widoczny przycisk z ikoną edycji. Przycisk otwiera ten sam formularz PrimeNG co tworzenie, wypełniony aktualnymi danymi. Po zapisie odpowiedź backendu ma odświeżyć `FinanceStore`, sumy per waluta, salda kont oraz widoczne historie bez przeładowania strony.
 
 ---
 
@@ -133,6 +197,15 @@ Użytkownik może:
 - filtrować je po miesiącu, koncie, typie i kategorii,
 - edytować oraz usuwać transakcję,
 - wykonać transfer pomiędzy własnymi kontami bez zaliczania go do przychodu lub wydatku.
+
+Wymagania UI dla edycji:
+
+- każda transakcja na dashboardzie i w szczegółach konta ma widoczny, dostępny z klawiatury przycisk z ikoną edycji,
+- aktywny obszar przycisku ma co najmniej 44 × 44 px i nie może być dostępny wyłącznie po hoverze,
+- edycja wykorzystuje ten sam modal i formularz co tworzenie transakcji,
+- formularz w trybie edycji jest wypełniony istniejącymi wartościami i pozwala zmienić konto, typ, kwotę, datę, kategorię oraz opis,
+- zapis pokazuje stan oczekiwania, blokuje podwójne wysłanie i pozostawia modal otwarty przy błędzie,
+- po sukcesie modal się zamyka, a sumy, salda i obie historie aktualizują się bez przeładowania strony.
 
 Transakcja pozostaje centralną jednostką systemu, ponieważ w przyszłości ten sam przypadek użycia będzie wywoływany przez chat i voice.
 
@@ -338,6 +411,8 @@ DELETE /api/finance/transactions/{transactionId}
 POST   /api/finance/transfers
 ```
 
+`PUT /api/finance/transactions/{transactionId}` przyjmuje pełny kontrakt formularza transakcji. W trybie local single-user edytowana transakcja i wybrane konto muszą należeć do użytkownika `id = 1`. Odpowiedź powinna zawierać zaktualizowaną transakcję oraz kompletny `FinanceOverviewDto`, analogicznie do odpowiedzi create, aby frontend mógł atomowo podmienić snapshot.
+
 ### Aktywa i zobowiązania
 
 ```text
@@ -410,23 +485,23 @@ Kryterium ukończenia: backend kompiluje się i uruchamia, migracja V1 nadal prz
 2. Dodać profil `local` i testową konfigurację bazy.
 3. [x] Zmienić model z `currentBalance` na `openingBalance` i `balanceStartDate` w nowej migracji Flyway.
 4. [x] Dodać `AccountService`, `AccountDto`, read API oraz spójną obsługę wyjątków biznesowych.
-5. **W toku:** lista i szczegóły są gotowe; pozostało tworzenie, edycja i archiwizacja kont.
-6. Ograniczyć pierwszy formularz do `BANK_ACCOUNT`, `SAVINGS` i `CASH`.
+5. **W toku:** lista, szczegóły, tworzenie i edycja są gotowe; pozostała archiwizacja kont.
+6. **W toku:** backend ogranicza create/update do `BANK_ACCOUNT`, `SAVINGS` i `CASH`; pozostało zastosować to ograniczenie w formularzu.
 7. Dodać testy serwisu i API kont.
-8. W Angularze dodać osobny `AccountApiService` i modele kontraktu.
-9. Podłączyć listę, szczegóły oraz formularz kont do rzeczywistego API.
-10. Dodać stany loading, empty i error.
-11. Nie mieszać prawdziwych kont z mockowanymi metrykami — sekcje zależne od transakcji pozostawić wyłączone lub wyraźnie oznaczone jako niedostępne.
+8. [x] W Angularze dodać osobny `AccountApiService` i modele kontraktu.
+9. **W toku:** lista i szczegóły korzystają z rzeczywistego API; pozostał formularz konta.
+10. [x] Dodać stany loading, empty i error dla listy oraz szczegółów.
+11. [x] Nie mieszać prawdziwych kont z mockowanymi metrykami — sekcje zależne od transakcji są wyraźnie oznaczone jako niedostępne.
 
 Kryterium ukończenia: użytkownik może z UI utworzyć, odczytać, edytować i zarchiwizować zwykłe konto, a odświeżenie strony zachowuje dane w MySQL.
 
 ## Etap 2 — transakcje i rzeczywiste saldo konta
 
-1. Dodać `TransactionService`, DTO i endpointy transakcji.
-2. Dodać listę transakcji z paginacją i filtrami.
-3. Dodać formularz transakcji przy użyciu Angular Reactive Forms i PrimeNG.
-4. Dodać edycję oraz usuwanie transakcji.
-5. Wyliczać saldo jako `openingBalance` plus wpływ transakcji.
+1. [x] Dodać `TransactionService`, DTO oraz endpoint tworzenia transakcji.
+2. **W toku:** wspólna lista i lista konta są gotowe; paginacja i filtry pozostają do zrobienia.
+3. [x] Dodać formularz transakcji przy użyciu Angular Reactive Forms i PrimeNG.
+4. **Następny wycinek:** dodać edycję transakcji w backendzie oraz przez ikonę i modal na obu listach; usuwanie pozostaje osobnym krokiem.
+5. [x] Wyliczać saldo jako `openingBalance` plus wpływ transakcji.
 6. Potwierdzić testami, że edycja i usunięcie transakcji natychmiast zmienia saldo.
 7. Dodać korektę salda jako jawny przypadek użycia.
 8. Dodać transfer pomiędzy kontami.
@@ -435,9 +510,9 @@ Kryterium ukończenia: saldo konta oraz historia pozostają spójne po create/ed
 
 ## Etap 3 — overview i pełne podłączenie dashboardu
 
-1. Dodać `FinanceOverviewService` liczący miesięczne agregacje.
-2. Dodać `GET /api/finance/overview`.
-3. Zastąpić pozostałe dane z `FinanceDataService` wywołaniami HTTP.
+1. **W toku:** `FinanceOverviewService` zwraca konta, sumy per waluta i historię; miesięczne agregacje pozostają do zrobienia.
+2. [x] Dodać `GET /api/finance/overview`.
+3. [x] Zastąpić widoczne dane dashboardu wywołaniami HTTP i snapshotem w `FinanceStore`.
 4. Podłączyć rzeczywiste przychody, wydatki, cashflow i ostatnie transakcje.
 5. Grupować podsumowania według waluty bez ich przeliczania.
 
@@ -514,7 +589,7 @@ Na desktopie sekcje mogą układać się w kolumny, ale kolejność semantyczna 
 - dłuższe operacje muszą mieć czytelny stan oczekiwania,
 - błędy walidacji mają być widoczne przy polach i zrozumiałe bez znajomości backendu,
 - testować layout co najmniej dla 320 px, 480 px i desktopu,
-- nie uzależniać podstawowej nawigacji od połączenia z siecią; PWA/offline write queue pozostaje osobnym etapem.
+- nie uzależniać podstawowej nawigacji od połączenia z siecią; cache i zapis offline w aplikacji Capacitor pozostają osobnym etapem.
 
 ---
 
@@ -571,12 +646,12 @@ utwórz konto
 1. `FIN-001` — **ukończone** — refaktor `user`, `finance.account` i `finance.transaction` do package-by-feature.
 2. `FIN-002` — ujednolicenie konfiguracji MySQL i profile środowiskowe.
 3. `FIN-003` — **ukończone** — migracja `currentBalance` do `openingBalance` i `balanceStartDate`.
-4. `FIN-004` — **ukończone** — wspólny format błędów API i globalny handler.
-5. `FIN-005` — **w toku** — AccountService, DTO i CRUD API zwykłych kont; read API jest gotowe.
-6. `FIN-006` — Angular AccountApiService, lista, szczegóły i formularz konta.
-7. `FIN-007` — stany loading/empty/error i testy responsywności kont.
+4. `FIN-004` — **ukończone** — wspólny format błędów API, błędów biznesowych i walidacji `@Valid`.
+5. `FIN-005` — **w toku** — read, create i update API są gotowe; pozostała archiwizacja konta.
+6. `FIN-006` — **w toku** — `AccountApiService`, lista i szczegóły są podłączone; pozostał formularz create/update.
+7. `FIN-007` — **ukończone dla odczytu kont** — stany loading/empty/error oraz ręczna weryfikacja przy 320 px, 480 px i 1280 px.
 8. `FIN-008` — TransactionService i read API.
-9. `FIN-009` — CRUD transakcji, paginacja i filtry.
+9. `FIN-009` — **w toku** — create i listy są gotowe; następna jest edycja przez ikonę i modal, a później delete, paginacja i filtry.
 10. `FIN-010` — reguły wyliczania salda i korekty.
 11. `FIN-011` — transfer pomiędzy kontami.
 12. `FIN-012` — FinanceOverviewService i endpoint dashboardu.

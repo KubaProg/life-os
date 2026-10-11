@@ -28,8 +28,8 @@ public class AccountController {
     }
 
     @GetMapping("/{accountId}")
-    public AccountDto getActiveAccount(@PathVariable Long accountId) {
-        return accountService.getActiveAccount(accountId);
+    public AccountDetailsDto getActiveAccount(@PathVariable Long accountId) {
+        return accountService.getActiveAccountDetails(accountId);
     }
 
     @PostMapping

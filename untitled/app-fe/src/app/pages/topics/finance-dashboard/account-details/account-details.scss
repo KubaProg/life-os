@@ -19,7 +19,19 @@ h2 { margin-bottom: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); }
 .balance-card strong { display: block; font-family: Georgia, serif; font-size: clamp(2.2rem, 6vw, 3.8rem); font-weight: 500; letter-spacing: -.06em; line-height: 1; }
 .balance-card span { display: block; margin-top: .9rem; color: #c5d8c8; font-size: .8rem; }
 .transactions-panel { margin-top: 1rem; padding: clamp(1.2rem, 3vw, 1.75rem); border: 1px solid #dce2dc; border-radius: 1.35rem; background: rgba(255, 255, 255, .74); box-shadow: 0 .8rem 2rem rgba(38, 57, 46, .04); }
-.unavailable-panel > p { max-width: 40rem; margin: 1rem 0 0; color: #68766c; line-height: 1.6; }
+.empty-transactions { padding: 2.5rem 1rem 1.25rem; color: #68766c; text-align: center; }
+.empty-transactions h3 { margin: 0 0 .4rem; font-family: Georgia, 'Times New Roman', serif; font-size: 1.1rem; font-weight: 500; }
+.empty-transactions p { margin-bottom: 0; line-height: 1.5; }
+.transactions-list { margin-top: 1.25rem; }
+.transaction { display: grid; min-height: 4.5rem; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .85rem; padding: .9rem 0; border-top: 1px solid #e8ede7; }
+.transaction__icon { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border-radius: 50%; background: #f3ded8; color: #8b3d2d; font-size: 1.15rem; font-weight: 800; }
+.transaction__icon--income { background: #dcecdf; color: #24603b; }
+.transaction__details { min-width: 0; }
+.transaction h3 { margin: 0 0 .18rem; font-family: Georgia, 'Times New Roman', serif; font-size: 1rem; font-weight: 500; }
+.transaction p, .transaction__details span { margin-bottom: 0; color: #778179; font-size: .78rem; }
+.transaction__details span { display: block; overflow: hidden; margin-top: .25rem; text-overflow: ellipsis; white-space: nowrap; }
+.transaction > strong { color: #8b3d2d; font-size: .9rem; text-align: right; white-space: nowrap; }
+.transaction > .transaction__amount--income { color: #24603b; }
 .not-found, .load-state { display: grid; min-height: 70dvh; place-items: center; align-content: center; gap: 1rem; text-align: center; }
 .not-found h1, .not-found p, .load-state p { margin-bottom: 0; }
 .not-found p, .load-state p { color: #758077; }
@@ -29,4 +41,6 @@ h2 { margin-bottom: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); }
   .account-heading { align-items: flex-start; }
   .account-heading > div { min-width: 0; }
   .account-number { line-height: 1.45; }
+  .transaction { grid-template-columns: auto minmax(0, 1fr); }
+  .transaction > strong { grid-column: 2; text-align: left; }
 }

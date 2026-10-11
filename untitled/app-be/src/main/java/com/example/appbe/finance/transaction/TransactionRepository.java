@@ -11,7 +11,33 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findTop10ByUserIdOrderByTransactionDateDescCreatedAtDesc(Long userId);
 
-    List<Transaction> findByUserIdAndFinancialAccountIdOrderByTransactionDateDesc(Long userId, Long financialAccountId);
+    List<Transaction> findByUserIdOrderByTransactionDateDescCreatedAtDesc(Long userId);
+
+    List<Transaction> findByUserIdAndFinancialAccountIdOrderByTransactionDateDescCreatedAtDesc(
+            Long userId,
+            Long financialAccountId
+    );
+
+    @Query("""
+            select coalesce(sum(
+                case
+                    when transaction.type = :incomeType then transaction.amount
+                    when transaction.type = :expenseType then -transaction.amount
+                    else 0
+                end
+            ), 0)
+            from Transaction transaction
+            where transaction.user.id = :userId
+              and transaction.financialAccount.id = :accountId
+              and transaction.transactionDate >= :from
+            """)
+    BigDecimal sumBalanceImpact(
+            @Param("userId") Long userId,
+            @Param("accountId") Long accountId,
+            @Param("from") LocalDate from,
+            @Param("incomeType") TransactionType incomeType,
+            @Param("expenseType") TransactionType expenseType
+    );
 
     @Query("""
             select coalesce(sum(transaction.amount), 0)

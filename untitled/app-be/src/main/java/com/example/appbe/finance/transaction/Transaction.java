@@ -75,7 +75,9 @@ public class Transaction {
             TransactionType type,
             BigDecimal amount,
             String currency,
-            LocalDate transactionDate
+            LocalDate transactionDate,
+            String category,
+            String description
     ) {
         this.user = user;
         this.financialAccount = financialAccount;
@@ -83,6 +85,8 @@ public class Transaction {
         this.amount = amount;
         this.currency = currency;
         this.transactionDate = transactionDate;
+        this.category = category;
+        this.description = description;
     }
 
     @PrePersist
