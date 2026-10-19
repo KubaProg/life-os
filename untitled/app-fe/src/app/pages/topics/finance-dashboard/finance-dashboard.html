@@ -13,34 +13,77 @@
       <p-button
         label="Dodaj transakcję"
         icon="pi pi-plus"
-        [disabled]="financeStore.loading() || !financeStore.accounts().length"
-        (onClick)="openTransactionDialog()"
+        [disabled]="financeStore.loading() || financeStore.saving() || !financeStore.accounts().length"
+        (onClick)="successMessage.set(null); transactionDialog.open()"
       />
+      <p-button label="Nowa lokata" icon="pi pi-plus" severity="secondary" [outlined]="true"
+        [disabled]="financeStore.loading() || financeStore.saving() || !financeStore.accounts().length"
+        (onClick)="successMessage.set(null); depositDialog.open()" />
+      <p-button label="Przenieś środki" icon="pi pi-arrow-right-arrow-left" severity="secondary" [outlined]="true"
+        [disabled]="financeStore.loading() || financeStore.saving() || !financeStore.accounts().length"
+        (onClick)="successMessage.set(null); transferDialog.open()" />
     </div>
 
     @if (successMessage()) {
       <p-message severity="success" [text]="successMessage()!" />
     }
 
-    <section class="balance-card" aria-label="Stan środków według waluty">
-      <div>
-        <p class="balance-card__label">Łącznie na kontach</p>
-        @if (financeStore.loading() && !financeStore.overview()) {
-          <p-progress-spinner ariaLabel="Ładowanie sald" [style]="{ width: '2.5rem', height: '2.5rem' }" />
-        } @else if (financeStore.accountTotals().length) {
-          <div class="balance-card__totals">
-            @for (total of financeStore.accountTotals(); track total.currency) {
-              <strong>{{ total.amount | currency: total.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
-            }
-          </div>
-        } @else {
-          <strong>Brak środków</strong>
-        }
-        <span class="balance-card__note">Waluty są prezentowane osobno i nie są przeliczane.</span>
+    <section class="panel monthly-panel" aria-labelledby="monthly-title" [attr.aria-busy]="financeStore.loading()">
+      <div class="panel__heading monthly-heading">
+        <div>
+          <p class="eyebrow">Przepływy finansowe</p>
+          <h2 id="monthly-title">Podsumowanie finansów</h2>
+        </div>
+        <div class="month-field">
+          <label for="summary-month">Miesiąc podsumowania</label>
+          <p-datepicker inputId="summary-month" view="month" dateFormat="mm/yy"
+            [readonlyInput]="true" [showIcon]="true" [disabled]="financeStore.saving()"
+            [ngModel]="selectedMonth()" (ngModelChange)="changeMonth($event)" appendTo="body" />
+        </div>
       </div>
-      <div class="balance-card__ring" aria-label="Liczba aktywnych kont">
-        <span>{{ financeStore.accounts().length }}</span>
-        {{ financeStore.accounts().length === 1 ? 'konto' : 'kont' }}
+      <div class="summary-grid">
+        <article class="summary-metric">
+          <h3>Zysk z inwestycji</h3>
+          @if (financeStore.investmentProfit(); as profit) {
+            @for (total of profit.totals; track total.currency) {
+              <p class="summary-value" [class.summary-value--negative]="total.amount < 0">
+                <strong>{{ total.amount > 0 ? '+' : '' }}{{ total.amount | currency: total.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+              </p>
+            } @empty {
+              <p class="summary-note">Brak inwestycji</p>
+            }
+            <p class="summary-note">{{ (profit.month + '-01') | date: 'LLLL y' : undefined : 'pl-PL' }}</p>
+            <p class="summary-note">Po szacowanym podatku</p>
+            @if (profit.mocked) {
+              <p class="summary-note">Dane przykładowe</p>
+            }
+          } @else {
+            <p class="summary-note">{{ financeStore.loading() ? 'Ładowanie…' : 'Brak danych' }}</p>
+          }
+        </article>
+        @if (financeStore.loading()) {
+          <p class="summary-status" role="status">Ładowanie podsumowania miesiąca…</p>
+        } @else if (financeStore.monthlySummary(); as summary) {
+          @for (metric of metrics; track metric.key) {
+            <article class="summary-metric">
+              <h3>{{ metric.label }}</h3>
+              @for (total of summary.totals; track total.currency) {
+                <p class="summary-value" [class.summary-value--negative]="(total[metric.key] ?? 0) < 0">
+                  @if (metric.key === 'savingsRate') {
+                    <strong>{{ total.savingsRate === null ? '—' : (total.savingsRate | number: '1.0-2' : 'pl-PL') + '%' }}</strong>
+                    <span>{{ total.currency }}{{ total.savingsRate === null ? ' · brak przychodów' : '' }}</span>
+                  } @else {
+                    <strong>{{ total[metric.key] | currency: total.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+                  }
+                </p>
+              } @empty {
+                <p class="summary-note">Brak danych</p>
+              }
+            </article>
+          }
+        } @else {
+          <p class="summary-status" role="status">Nie udało się pobrać podsumowania miesiąca.</p>
+        }
       </div>
     </section>
 
@@ -62,7 +105,7 @@
           <p-message severity="error" text="Nie udało się pobrać danych finansowych." />
           <p-button label="Spróbuj ponownie" icon="pi pi-refresh" [outlined]="true" (onClick)="financeStore.refreshOverview()" />
         </div>
-      } @else if (!financeStore.accounts().length) {
+      } @else if (!financeStore.accounts().length && !financeStore.investments().length) {
         <div class="state">
           <h3>Nie masz jeszcze żadnego konta</h3>
           <p>Dodaj konto, aby rozpocząć zapisywanie transakcji.</p>
@@ -81,6 +124,15 @@
               <strong>{{ account.currentBalance | currency: account.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
             </a>
           }
+          @for (investment of financeStore.investments(); track investment.id) {
+            <a class="account" [routerLink]="['/finanse/inwestycje', investment.id]">
+              <span class="account__mark account__mark--investment">{{ investmentTypeLabel(investment.type).charAt(0) }}</span>
+              <div><h3>{{ investment.name }}</h3>
+                <p>{{ investmentTypeLabel(investment.type) }} · {{ investment.currency }} · {{ investmentStatusLabel(investment.status) }}</p>
+                <p>Wartość po szacowanym podatku</p></div>
+              <strong>{{ investment.currentValue | currency: investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+            </a>
+          }
         </div>
       }
     </section>
@@ -93,14 +145,29 @@
         </div>
       </div>
 
+      <app-transaction-history-filters
+        #historyFilters
+        idPrefix="dashboard-history"
+        [transactions]="financeStore.transactions()"
+        [accounts]="financeStore.accounts()"
+        [showAccountFilter]="true"
+        [disabled]="financeStore.loading() || financeStore.loadError()"
+        [hidden]="!financeStore.overview()"
+      />
+
       @if (!financeStore.loading() && !financeStore.loadError() && !financeStore.transactions().length) {
         <div class="state state--compact">
           <h3>Brak transakcji</h3>
           <p>Dodaj pierwszy przychód lub wydatek.</p>
         </div>
-      } @else if (financeStore.transactions().length) {
+      } @else if (financeStore.transactions().length && !historyFilters.filteredTransactions().length) {
+        <div class="state state--compact" role="status">
+          <h3>Brak pasujących transakcji</h3>
+          <p>Zmień lub wyczyść filtry, aby zobaczyć pozostałą historię.</p>
+        </div>
+      } @else if (historyFilters.filteredTransactions().length) {
         <div class="transactions-list">
-          @for (transaction of financeStore.transactions(); track transaction.id) {
+          @for (transaction of historyFilters.filteredTransactions(); track transaction.id) {
             <article class="transaction">
               <span class="transaction__icon" [class.transaction__icon--income]="transaction.type === 'INCOME'" aria-hidden="true">
                 {{ transaction.type === 'INCOME' ? '↙' : '↗' }}
@@ -115,73 +182,35 @@
               <strong [class.transaction__amount--income]="transaction.type === 'INCOME'">
                 {{ transaction.type === 'INCOME' ? '+' : '−' }}{{ transaction.amount | currency: transaction.currency : 'symbol' : '1.2-2' : 'pl-PL' }}
               </strong>
+              <div class="transaction__actions">
+              <p-button severity="secondary" [text]="true" [ariaLabel]="'Edytuj transakcję: ' + transaction.category" [disabled]="financeStore.saving() || !financeStore.accounts().length" (onClick)="successMessage.set(null); transactionDialog.open(transaction)">
+                <ng-template #icon>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <path d="m16 3 5 5L8 21H3v-5L16 3Z" />
+                    <path d="m13 6 5 5" />
+                  </svg>
+                </ng-template>
+              </p-button>
+                <p-button severity="danger" [text]="true" [ariaLabel]="'Usuń transakcję: ' + transaction.category" [disabled]="financeStore.saving()" (onClick)="successMessage.set(null); deleteDialog.open(transaction)">
+                  <ng-template #icon>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                      <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" />
+                    </svg>
+                  </ng-template>
+                </p-button>
+              </div>
             </article>
           }
         </div>
       }
     </section>
+    @if (financeStore.overview()) {
+      <app-transfer-history idPrefix="dashboard-transfers" [transfers]="financeStore.transfers()" />
+    }
   </section>
 
-  <p-dialog
-    header="Dodaj transakcję"
-    [modal]="true"
-    [visible]="transactionDialogVisible()"
-    [closable]="!financeStore.saving()"
-    [dismissableMask]="!financeStore.saving()"
-    [draggable]="false"
-    [style]="{ width: 'min(36rem, calc(100vw - 2rem))' }"
-    (visibleChange)="setTransactionDialogVisible($event)"
-  >
-    <form class="transaction-form" [formGroup]="transactionForm" (ngSubmit)="submitTransaction()">
-      <div class="form-field">
-        <label for="transaction-account">Konto</label>
-        <p-select inputId="transaction-account" formControlName="accountId" [options]="accountOptions()" optionLabel="name" optionValue="id" placeholder="Wybierz konto" appendTo="body" />
-        @if (transactionForm.controls.accountId.touched && transactionForm.controls.accountId.invalid) {
-          <small>Wybierz konto.</small>
-        }
-      </div>
-
-      <div class="form-field">
-        <label for="transaction-type">Rodzaj</label>
-        <p-select inputId="transaction-type" formControlName="type" [options]="transactionTypes" optionLabel="label" optionValue="value" appendTo="body" />
-      </div>
-
-      <div class="form-row">
-        <div class="form-field">
-          <label for="transaction-amount">Kwota</label>
-          <p-inputnumber inputId="transaction-amount" formControlName="amount" mode="decimal" [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="4" placeholder="0,00" />
-          @if (transactionForm.controls.amount.touched && transactionForm.controls.amount.invalid) {
-            <small>Podaj kwotę większą od zera.</small>
-          }
-        </div>
-
-        <div class="form-field">
-          <label for="transaction-date">Data</label>
-          <p-datepicker inputId="transaction-date" formControlName="transactionDate" dateFormat="dd.mm.yy" [maxDate]="today" [showIcon]="true" appendTo="body" />
-        </div>
-      </div>
-
-      <div class="form-field">
-        <label for="transaction-category">Kategoria</label>
-        <input id="transaction-category" pInputText formControlName="category" maxlength="100" placeholder="np. Jedzenie, Wynagrodzenie" />
-        @if (transactionForm.controls.category.touched && transactionForm.controls.category.invalid) {
-          <small>Podaj kategorię.</small>
-        }
-      </div>
-
-      <div class="form-field">
-        <label for="transaction-description">Opis <span>(opcjonalnie)</span></label>
-        <textarea id="transaction-description" pTextarea formControlName="description" maxlength="500" rows="3" placeholder="Krótka notatka"></textarea>
-      </div>
-
-      @if (saveError()) {
-        <p-message severity="error" [text]="saveError()!" />
-      }
-
-      <div class="form-actions">
-        <p-button type="button" label="Anuluj" severity="secondary" [outlined]="true" [disabled]="financeStore.saving()" (onClick)="setTransactionDialogVisible(false)" />
-        <p-button type="submit" label="Zapisz transakcję" icon="pi pi-check" [loading]="financeStore.saving()" />
-      </div>
-    </form>
-  </p-dialog>
+  <app-deposit-dialog #depositDialog (saved)="successMessage.set($event)" />
+  <app-transfer-dialog #transferDialog (saved)="successMessage.set($event)" />
+  <app-transaction-dialog #transactionDialog (saved)="successMessage.set($event)" />
+  <app-transaction-delete-dialog #deleteDialog (deleted)="successMessage.set($event)" />
 </main>

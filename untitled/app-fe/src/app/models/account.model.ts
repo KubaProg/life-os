@@ -36,4 +36,5 @@ export interface UpdateAccountRequest {
 export interface AccountDetailsDto {
   account: AccountDto;
   transactions: ReadonlyArray<import('./transaction.model').TransactionDto>;
+  transfers: ReadonlyArray<import('./transfer.model').TransferDto>;
 }

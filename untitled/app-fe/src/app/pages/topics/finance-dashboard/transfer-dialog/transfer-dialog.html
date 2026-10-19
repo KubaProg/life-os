@@ -1,0 +1,20 @@
+<p-dialog header="Przenieś środki" [modal]="true" [visible]="visible()" (visibleChange)="close($event)"
+  [closable]="!store.saving()" [closeOnEscape]="!store.saving()" [draggable]="false"
+  [style]="{ width: 'min(36rem, calc(100vw - 2rem))' }">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="investment-form">
+    <p class="note">Przeniesienie kapitału nie jest przychodem ani wydatkiem. Lokata jest finansowana przy tworzeniu i nie przyjmuje dopłat. Po jej zakończeniu możesz przenieść całą wartość na zwykłe konto w tej samej walucie.</p>
+    <div class="field"><label for="transfer-source">Z rachunku</label>
+      <p-select inputId="transfer-source" formControlName="source" [options]="endpoints()" optionLabel="label" optionValue="key" appendTo="body" /></div>
+    <div class="field"><label for="transfer-destination">Na rachunek</label>
+      <p-select inputId="transfer-destination" formControlName="destination" [options]="endpoints()" optionLabel="label" optionValue="key" appendTo="body" /></div>
+    <div class="field"><label for="transfer-amount">Kwota w walucie rachunków</label>
+      <p-inputnumber inputId="transfer-amount" formControlName="amount" locale="pl-PL" [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2" /></div>
+    <div class="field"><label for="transfer-date">Data</label>
+      <p-datepicker inputId="transfer-date" formControlName="date" dateFormat="dd.mm.yy" [readonlyInput]="true" [maxDate]="today" appendTo="body" /></div>
+    @if (error()) { <p-message severity="error" [text]="error()!" /> }
+    <div class="actions">
+      <p-button label="Anuluj" type="button" severity="secondary" [outlined]="true" [disabled]="store.saving()" (onClick)="close(false)" />
+      <p-button label="Zapisz transfer" type="submit" [loading]="store.saving()" [disabled]="store.saving() || store.loading()" />
+    </div>
+  </form>
+</p-dialog>

@@ -1,0 +1,58 @@
+<p-fieldset
+  [legend]="'Filtry'"
+  [toggleable]="true"
+  [collapsed]="collapsed()"
+  (collapsedChange)="collapsed.set($event)"
+>
+<div class="history-filters" role="group" aria-label="Filtry historii transakcji">
+  <div class="filter-field">
+    <label [for]="idPrefix() + '-month'">Miesiąc</label>
+    <p-datepicker
+      [inputId]="idPrefix() + '-month'"
+      view="month"
+      dateFormat="mm/yy"
+      placeholder="Wszystkie miesiące"
+      [readonlyInput]="true"
+      [showIcon]="true"
+      panelStyleClass="history-month-panel"
+      [disabled]="disabled()"
+      [ngModel]="selectedMonth()"
+      (ngModelChange)="selectedMonth.set($event)"
+      appendTo="body"></p-datepicker>
+  </div>
+  <div class="filter-field">
+    <label [for]="idPrefix() + '-type'">Typ transakcji</label>
+    <p-select
+      [inputId]="idPrefix() + '-type'"
+      ariaLabel="Typ transakcji"
+      [options]="typeOptions"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Wszystkie"
+      [disabled]="disabled()"
+      [ngModel]="selectedType()"
+      (ngModelChange)="selectedType.set($event)"
+      appendTo="body"
+    />
+  </div>
+  @if (showAccountFilter()) {
+    <div class="filter-field">
+      <label [for]="idPrefix() + '-account'">Konto</label>
+      <p-select
+        [inputId]="idPrefix() + '-account'"
+        ariaLabel="Konto"
+        [options]="accountOptions()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Wszystkie konta"
+        [disabled]="disabled()"
+        [ngModel]="selectedAccountId()"
+        (ngModelChange)="selectedAccountId.set($event)"
+        appendTo="body"
+      />
+    </div>
+  }
+  <p-button class="filter-reset" label="Wyczyść filtry" severity="secondary" [outlined]="true" [disabled]="disabled() || !hasActiveFilters()" (onClick)="reset()" />
+</div>
+</p-fieldset>
+<p class="filter-count" role="status">Wyświetlono {{ filteredTransactions().length }} z {{ transactions().length }} transakcji.</p>

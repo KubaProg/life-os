@@ -1,0 +1,10 @@
+.investment-form, .field { display: grid; gap: .5rem; min-width: 0; }
+.investment-form { gap: 1rem; }
+.form-row { display: grid; gap: 1rem; min-width: 0; }
+.field label { font-size: .85rem; font-weight: 600; }
+.note { margin: 0; color: #617068; font-size: .8rem; line-height: 1.6; }
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .75rem; }
+:host ::ng-deep .field .p-select, :host ::ng-deep .field .p-inputnumber, :host ::ng-deep .field .p-datepicker { width: 100%; min-width: 0; }
+:host ::ng-deep .field .p-inputtext { width: 100%; min-width: 0; min-height: 44px; }
+:host ::ng-deep .p-button { min-height: 44px; }
+@media (min-width: 480px) { .form-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

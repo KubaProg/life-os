@@ -1,0 +1,18 @@
+.transaction-form { display: grid; gap: 1rem; padding-top: .25rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-field { display: grid; min-width: 0; gap: .4rem; }
+.form-field label { color: #33483b; font-size: .86rem; font-weight: 700; }
+.form-field label span { color: #7b857e; font-weight: 400; }
+.form-field input, .form-field textarea { width: 100%; }
+.form-field small { color: #b42318; font-size: .76rem; }
+.form-actions { display: flex; justify-content: flex-end; gap: .75rem; padding-top: .5rem; }
+:host ::ng-deep .form-field .p-select,
+:host ::ng-deep .form-field .p-inputnumber,
+:host ::ng-deep .form-field .p-datepicker { width: 100%; }
+:host ::ng-deep .p-dialog-content { overflow: visible; }
+
+@media (max-width: 480px) {
+  .form-row { grid-template-columns: 1fr; }
+  .form-actions { display: grid; grid-template-columns: 1fr; }
+  :host ::ng-deep .form-actions .p-button { width: 100%; min-height: 2.75rem; }
+}

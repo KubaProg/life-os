@@ -1,0 +1,31 @@
+<p-dialog header="Nowa lokata" [modal]="true" [visible]="visible()" (visibleChange)="close($event)"
+  [closable]="!store.saving()" [closeOnEscape]="!store.saving()" [draggable]="false"
+  [style]="{ width: 'min(40rem, calc(100vw - 2rem))' }">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="investment-form">
+    <p class="note">Stałe oprocentowanie, naliczanie za zakończone dni (365/366 dni w roku), wypłata odsetek na koniec. Ten wariant nie obsługuje dopłat ani wcześniejszego zerwania.</p>
+    <div class="field"><label for="deposit-name">Nazwa lokaty</label>
+      <input id="deposit-name" pInputText formControlName="name" maxlength="160" placeholder="np. Lokata na wakacje" /></div>
+    <div class="field"><label for="deposit-account">Skąd pobrać kapitał?</label>
+      <p-select inputId="deposit-account" formControlName="sourceAccountId" [options]="accounts()" optionLabel="label" optionValue="id" appendTo="body" /></div>
+    <div class="field"><label for="deposit-principal">Kapitał (w walucie wybranego konta)</label>
+      <p-inputnumber inputId="deposit-principal" formControlName="principal" locale="pl-PL" [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2" /></div>
+    <div class="form-row">
+      <div class="field"><label for="deposit-rate">Oprocentowanie roczne (%)</label>
+        <p-inputnumber inputId="deposit-rate" formControlName="annualRate" locale="pl-PL" [min]="0" [max]="100" [maxFractionDigits]="4" /></div>
+      <div class="field"><label for="deposit-tax">Podatek od odsetek (%)</label>
+        <p-inputnumber inputId="deposit-tax" formControlName="taxRate" locale="pl-PL" [min]="0" [max]="100" [maxFractionDigits]="4" /></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label for="deposit-start">Początek (włącznie)</label>
+        <p-datepicker inputId="deposit-start" formControlName="startDate" dateFormat="dd.mm.yy" [maxDate]="today" [readonlyInput]="true" appendTo="body" /></div>
+      <div class="field"><label for="deposit-end">Koniec (bez naliczania za ten dzień)</label>
+        <p-datepicker inputId="deposit-end" formControlName="maturityDate" dateFormat="dd.mm.yy" [readonlyInput]="true" appendTo="body" /></div>
+    </div>
+    <p class="note">Kapitał zostanie przeniesiony przy utworzeniu lokaty. Wariant obsługuje okres od 1 dnia do 10 lat. Wartość netto uwzględnia szacowany podatek według wpisanej stawki.</p>
+    @if (error()) { <p-message severity="error" [text]="error()!" /> }
+    <div class="actions">
+      <p-button label="Anuluj" type="button" severity="secondary" [outlined]="true" [disabled]="store.saving()" (onClick)="close(false)" />
+      <p-button label="Utwórz lokatę" type="submit" [loading]="store.saving()" [disabled]="store.saving() || store.loading()" />
+    </div>
+  </form>
+</p-dialog>

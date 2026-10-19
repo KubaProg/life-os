@@ -21,6 +21,10 @@ export const routes: Routes = [
       )
   },
   {
+    path: 'finanse/inwestycje/:investmentId',
+    loadComponent: () => import('./pages/topics/finance-dashboard/investment-details/investment-details').then(component => component.InvestmentDetails)
+  },
+  {
     path: '**',
     redirectTo: ''
   }

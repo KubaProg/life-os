@@ -1,0 +1,32 @@
+<p-dialog
+  header="Usunąć transakcję?"
+  [modal]="true"
+  [visible]="selectedTransaction() !== null"
+  [closable]="!financeStore.saving()"
+  [closeOnEscape]="!financeStore.saving()"
+  [dismissableMask]="false"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: 'min(26rem, calc(100vw - 2rem))' }"
+  (visibleChange)="!$event && close()"
+>
+  @if (selectedTransaction(); as transaction) {
+    <div class="delete-content">
+      <div class="transaction-summary">
+        <strong>{{ transaction.category }}</strong>
+        <span>{{ transaction.accountName }} · {{ transaction.transactionDate | date: 'd MMM y' : undefined : 'pl-PL' }}</span>
+        <strong>{{ transaction.type === 'INCOME' ? '+' : '−' }}{{ transaction.amount | currency: transaction.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+      </div>
+      <p>Tej operacji nie można cofnąć. Saldo konta i podsumowania zostaną przeliczone.</p>
+      @if (deleteError()) {
+        <div role="alert"><p-message severity="error" [text]="deleteError()!" /></div>
+      }
+    </div>
+  }
+  <ng-template #footer>
+    <div class="delete-actions">
+      <p-button label="Anuluj" severity="secondary" [outlined]="true" [disabled]="financeStore.saving()" (onClick)="close()" />
+      <p-button label="Usuń transakcję" severity="danger" [disabled]="financeStore.saving()" [loading]="financeStore.saving()" (onClick)="confirmDelete()" />
+    </div>
+  </ng-template>
+</p-dialog>

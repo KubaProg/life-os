@@ -1,0 +1,48 @@
+<main class="investment-shell">
+  <div class="investment-page">
+    <a class="back-link" routerLink="/finanse">← Wszystkie finanse</a>
+    @if (state() === 'loading') {
+      <div class="load-state" role="status"><p-progress-spinner ariaLabel="Ładowanie lokaty" [style]="{ width: '2.5rem', height: '2.5rem' }" /></div>
+    } @else if (details(); as data) {
+      <header><p class="eyebrow">Lokata · {{ data.investment.currency }}</p><h1>{{ data.investment.name }}</h1>
+        <p>{{ statusLabel(data.investment.status) }}</p></header>
+      @if (success()) { <p-message severity="success" [text]="success()!" /> }
+      <section class="metrics" aria-label="Wartość i wynik lokaty">
+        <article><h2>Wartość po podatku</h2><strong>{{ data.investment.currentValue | currency: data.investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
+        <article><h2>Kapitał początkowy</h2><strong>{{ data.investment.principal | currency: data.investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
+        <article><h2>Odsetki brutto</h2><strong>{{ data.investment.grossProfit | currency: data.investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
+        <article><h2>Zysk po podatku</h2><strong>{{ data.investment.netProfit | currency: data.investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
+      </section>
+      <p class="note">Naliczenie na {{ data.investment.valuedOn | date: 'd MMM y' : undefined : 'pl-PL' }}, za pełne zakończone dni. Podatek według wpisanej stawki: {{ data.investment.estimatedTax | currency: data.investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}. Do rozliczenia jest to szacunek.</p>
+      @if (data.investment.status === 'MATURED') {
+        <p-button label="Przenieś całość na konto" [disabled]="store.saving()" (onClick)="transferDialog.open({ kind: 'INVESTMENT', id: data.investment.id }, data.investment.currentValue)" />
+      }
+      <section class="panel" aria-labelledby="growth-title"><h2 id="growth-title">Wzrost wartości lokaty</h2>
+        @if (chart(); as growth) {
+          <svg viewBox="0 0 600 160" role="img" aria-labelledby="growth-chart-title"><title id="growth-chart-title">Wartość lokaty po szacowanym podatku od rozpoczęcia do ostatniego naliczenia</title>
+            <polyline [attr.points]="growth.points" fill="none" stroke="#285a3d" stroke-width="3" /></svg>
+          <div class="chart-labels"><span>{{ growth.first.date | date: 'd MMM y' : undefined : 'pl-PL' }}<br>{{ growth.first.currentValue | currency: data.investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</span>
+            <span>{{ growth.last.date | date: 'd MMM y' : undefined : 'pl-PL' }}<br>{{ growth.last.currentValue | currency: data.investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</span></div>
+        } @else { <p>Pierwsze odsetki pojawią się po zakończeniu pierwszego dnia lokaty.</p> }
+      </section>
+      <section class="panel" aria-labelledby="terms-title"><h2 id="terms-title">Warunki lokaty</h2>
+        <dl><div><dt>Oprocentowanie roczne</dt><dd>{{ data.investment.annualRate | number: '1.0-4' : 'pl-PL' }}%</dd></div>
+          <div><dt>Podatek od odsetek</dt><dd>{{ data.investment.taxRate | number: '1.0-4' : 'pl-PL' }}%</dd></div>
+          <div><dt>Kapitalizacja / wypłata</dt><dd>Na koniec okresu, bez kapitalizacji w trakcie</dd></div>
+          <div><dt>Początek (włącznie)</dt><dd>{{ data.investment.startDate | date: 'd MMMM y' : undefined : 'pl-PL' }}</dd></div>
+          <div><dt>Koniec (dzień wyłączony z naliczania)</dt><dd>{{ data.investment.maturityDate | date: 'd MMMM y' : undefined : 'pl-PL' }}</dd></div></dl>
+        <p class="note">Stałe oprocentowanie i rzeczywista liczba dni w roku (365/366). Bez dopłat i wcześniejszego zerwania. Warunki lokaty pozostają zapisane razem z historią.</p>
+      </section>
+      <section class="panel" aria-labelledby="operations-title"><h2 id="operations-title">Operacje</h2>
+        @for (operation of data.operations; track operation.id) {
+          <article class="history-row"><div><h3>{{ operationLabel(operation.type) }}</h3><p>{{ operation.date | date: 'd MMM y' : undefined : 'pl-PL' }} · Transfer #{{ operation.transferId }}</p></div>
+            <strong>{{ operation.amount | currency: operation.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
+        }
+      </section>
+    } @else {
+      <section class="panel" role="alert"><h1>{{ state() === 'not-found' ? 'Nie znaleziono inwestycji' : 'Nie udało się pobrać inwestycji' }}</h1>
+        <p-button label="Spróbuj ponownie" [outlined]="true" (onClick)="refresh()" /></section>
+    }
+  </div>
+  <app-transfer-dialog #transferDialog (saved)="refresh($event)" />
+</main>

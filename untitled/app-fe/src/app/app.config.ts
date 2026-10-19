@@ -21,6 +21,16 @@ export const appConfig: ApplicationConfig = {
 
     providePrimeNG({
       ripple: true,
+      translation: {
+        monthNames: ['styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec', 'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień'],
+        monthNamesShort: ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'],
+        chooseDate: 'Wybierz datę',
+        chooseYear: 'Wybierz rok',
+        prevYear: 'Poprzedni rok',
+        nextYear: 'Następny rok',
+        prevDecade: 'Poprzednia dekada',
+        nextDecade: 'Następna dekada'
+      },
       theme: {
         preset: Aura,
         options: {

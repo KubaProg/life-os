@@ -23,10 +23,14 @@
         </div>
       </header>
 
+      @if (successMessage()) {
+        <p-message severity="success" [text]="successMessage()!" />
+      }
+
       <section class="balance-card" aria-label="Aktualne saldo konta">
         <p>Aktualne saldo</p>
         <strong>{{ selectedAccount.currentBalance | currency: selectedAccount.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
-        <span>Saldo początkowe wraz z zapisanymi przychodami i wydatkami.</span>
+        <span>Saldo początkowe, przychody, wydatki i transfery.</span>
       </section>
 
       <section class="transactions-panel" aria-labelledby="transactions-title">
@@ -36,14 +40,24 @@
             <h2 id="transactions-title">Transakcje</h2>
           </div>
         </div>
+        <app-transaction-history-filters
+          #historyFilters
+          idPrefix="account-history"
+          [transactions]="transactions()"
+        />
         @if (!transactions().length) {
           <div class="empty-transactions">
             <h3>Brak transakcji na tym koncie</h3>
             <p>Nowe przychody i wydatki możesz dodać z głównego ekranu finansów.</p>
           </div>
+        } @else if (!historyFilters.filteredTransactions().length) {
+          <div class="empty-transactions" role="status">
+            <h3>Brak pasujących transakcji</h3>
+            <p>Zmień lub wyczyść filtry, aby zobaczyć pozostałą historię.</p>
+          </div>
         } @else {
           <div class="transactions-list">
-            @for (transaction of transactions(); track transaction.id) {
+            @for (transaction of historyFilters.filteredTransactions(); track transaction.id) {
               <article class="transaction">
                 <span class="transaction__icon" [class.transaction__icon--income]="transaction.type === 'INCOME'" aria-hidden="true">
                   {{ transaction.type === 'INCOME' ? '↙' : '↗' }}
@@ -58,11 +72,29 @@
                 <strong [class.transaction__amount--income]="transaction.type === 'INCOME'">
                   {{ transaction.type === 'INCOME' ? '+' : '−' }}{{ transaction.amount | currency: transaction.currency : 'symbol' : '1.2-2' : 'pl-PL' }}
                 </strong>
+              <div class="transaction__actions">
+              <p-button severity="secondary" [text]="true" [ariaLabel]="'Edytuj transakcję: ' + transaction.category" [disabled]="financeStore.saving() || !financeStore.accounts().length" (onClick)="successMessage.set(null); transactionDialog.open(transaction)">
+                <ng-template #icon>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <path d="m16 3 5 5L8 21H3v-5L16 3Z" />
+                    <path d="m13 6 5 5" />
+                  </svg>
+                </ng-template>
+              </p-button>
+                <p-button severity="danger" [text]="true" [ariaLabel]="'Usuń transakcję: ' + transaction.category" [disabled]="financeStore.saving()" (onClick)="successMessage.set(null); deleteDialog.open(transaction)">
+                  <ng-template #icon>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                      <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" />
+                    </svg>
+                  </ng-template>
+                </p-button>
+              </div>
               </article>
             }
           </div>
         }
       </section>
+      <app-transfer-history idPrefix="account-transfers" [transfers]="transfers()" />
     </section>
   } @else if (loadState() === 'not-found') {
     <section class="not-found">
@@ -78,4 +110,6 @@
       <p-button label="Wróć do finansów" routerLink="/finanse" />
     </section>
   }
+  <app-transaction-dialog #transactionDialog (saved)="successMessage.set($event)" />
+  <app-transaction-delete-dialog #deleteDialog (deleted)="successMessage.set($event)" />
 </main>

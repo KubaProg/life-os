@@ -23,7 +23,7 @@ h2 { margin-bottom: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); }
 .empty-transactions h3 { margin: 0 0 .4rem; font-family: Georgia, 'Times New Roman', serif; font-size: 1.1rem; font-weight: 500; }
 .empty-transactions p { margin-bottom: 0; line-height: 1.5; }
 .transactions-list { margin-top: 1.25rem; }
-.transaction { display: grid; min-height: 4.5rem; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .85rem; padding: .9rem 0; border-top: 1px solid #e8ede7; }
+.transaction { display: grid; min-height: 4.5rem; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: .85rem; padding: .9rem 0; border-top: 1px solid #e8ede7; }
 .transaction__icon { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border-radius: 50%; background: #f3ded8; color: #8b3d2d; font-size: 1.15rem; font-weight: 800; }
 .transaction__icon--income { background: #dcecdf; color: #24603b; }
 .transaction__details { min-width: 0; }
@@ -41,6 +41,11 @@ h2 { margin-bottom: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); }
   .account-heading { align-items: flex-start; }
   .account-heading > div { min-width: 0; }
   .account-number { line-height: 1.45; }
-  .transaction { grid-template-columns: auto minmax(0, 1fr); }
+  .transaction { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .transaction__actions { grid-column: 3; grid-row: 1 / span 2; flex-direction: column; }
   .transaction > strong { grid-column: 2; text-align: left; }
 }
+
+:host ::ng-deep .transaction__actions .p-button { min-width: 2.75rem; min-height: 2.75rem; }
+
+.transaction__actions { display: flex; align-items: center; gap: .25rem; }

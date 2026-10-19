@@ -1,0 +1,66 @@
+import type { FinanceOverviewDto } from './finance-overview.model';
+
+export type InvestmentType = 'DEPOSIT' | 'BOND' | 'ETF' | 'OTHER';
+export interface InvestmentDto {
+  id: number;
+  name: string;
+  type: InvestmentType;
+  currency: string;
+  principal: number;
+  currentValue: number;
+  grossProfit: number;
+  estimatedTax: number;
+  netProfit: number;
+  annualRate: number;
+  taxRate: number;
+  calculationRule: string;
+  capitalization: 'AT_MATURITY';
+  startDate: string;
+  maturityDate: string;
+  valuedOn: string;
+  status: 'AWAITING_FUNDING' | 'ACTIVE' | 'MATURED' | 'SETTLED';
+}
+export interface DepositRequest {
+  requestId: string;
+  name: string;
+  sourceAccountId: number;
+  principal: number;
+  annualRate: number;
+  taxRate: number;
+  startDate: string;
+  maturityDate: string;
+}
+export interface InvestmentOperationDto {
+  id: number;
+  transferId: number;
+  type: 'FUNDING' | 'PRINCIPAL_RETURN' | 'INTEREST_PAYOUT';
+  date: string;
+  currency: string;
+  amount: number;
+}
+export interface InvestmentValuationDto {
+  date: string;
+  currentValue: number;
+  grossProfit: number;
+  estimatedTax: number;
+  netProfit: number;
+  source: string;
+}
+export interface InvestmentDetailsDto {
+  investment: InvestmentDto;
+  valuations: ReadonlyArray<InvestmentValuationDto>;
+  operations: ReadonlyArray<InvestmentOperationDto>;
+}
+export interface InvestmentMutationResponse {
+  investmentAccountId: number;
+  overview: FinanceOverviewDto;
+}
+export const investmentTypeLabel = (type: InvestmentType): string => ({
+  DEPOSIT: 'Lokata', BOND: 'Obligacje', ETF: 'ETF', OTHER: 'Inwestycja'
+})[type];
+export const investmentStatusLabel = (status: InvestmentDto['status']): string => ({
+  AWAITING_FUNDING: 'Oczekuje na wpłatę', ACTIVE: 'Aktywna', MATURED: 'Do wypłaty', SETTLED: 'Rozliczona'
+})[status];
+export const investmentOperationLabel = (type: InvestmentOperationDto['type']): string => ({
+  FUNDING: 'Założenie lokaty', PRINCIPAL_RETURN: 'Zwrot kapitału', INTEREST_PAYOUT: 'Wypłata odsetek'
+})[type];

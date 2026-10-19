@@ -1,6 +1,6 @@
 package com.example.appbe.user;
 
-import com.example.appbe.finance.account.FinancialAccount;
+import com.example.appbe.finance.account.Account;
 import com.example.appbe.finance.transaction.Transaction;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -28,7 +28,7 @@ public class User {
     private String email;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<FinancialAccount> financialAccounts = new ArrayList<>();
+    private List<Account> accounts = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Transaction> transactions = new ArrayList<>();
@@ -61,8 +61,8 @@ public class User {
         this.email = email;
     }
 
-    public List<FinancialAccount> getFinancialAccounts() {
-        return financialAccounts;
+    public List<Account> getAccounts() {
+        return accounts;
     }
 
     public List<Transaction> getTransactions() {

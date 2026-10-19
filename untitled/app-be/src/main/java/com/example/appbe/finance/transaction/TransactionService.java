@@ -2,12 +2,14 @@ package com.example.appbe.finance.transaction;
 
 import com.example.appbe.exception.AccountNotFoundException;
 import com.example.appbe.exception.TransactionBeforeBalanceStartDateException;
+import com.example.appbe.exception.TransactionNotFoundException;
 import com.example.appbe.exception.UnsupportedTransactionTypeException;
 import com.example.appbe.finance.account.FinancialAccount;
 import com.example.appbe.finance.account.FinancialAccountRepository;
 import com.example.appbe.finance.overview.FinanceOverviewService;
 import com.example.appbe.user.User;
 import com.example.appbe.user.UserRepository;
+import java.time.YearMonth;
 import java.util.EnumSet;
 import java.util.Set;
 import org.springframework.stereotype.Service;
@@ -43,16 +45,9 @@ public class TransactionService {
     }
 
     @Transactional
-    public TransactionCreatedResponse createTransaction(TransactionRequest request) {
-        validateType(request.type());
-
-        FinancialAccount account = accountRepository
-                .findByIdAndUserIdAndActiveTrue(request.accountId(), LOCAL_USER_ID)
-                .orElseThrow(() -> new AccountNotFoundException(request.accountId()));
-
-        if (request.transactionDate().isBefore(account.getBalanceStartDate())) {
-            throw new TransactionBeforeBalanceStartDateException(account.getBalanceStartDate());
-        }
+    public TransactionCreatedResponse createTransaction(TransactionRequest request, YearMonth month) {
+        userRepository.findForUpdate(LOCAL_USER_ID).orElseThrow();
+        FinancialAccount account = validateRequest(request);
 
         User user = userRepository.getReferenceById(LOCAL_USER_ID);
         Transaction transaction = new Transaction(
@@ -70,8 +65,56 @@ public class TransactionService {
 
         return new TransactionCreatedResponse(
                 transactionMapper.toDto(savedTransaction),
-                overviewService.getOverview()
+                overviewService.getOverview(month)
         );
+    }
+
+    @Transactional
+    public TransactionUpdatedResponse updateTransaction(Long transactionId, TransactionRequest request, YearMonth month) {
+        userRepository.findForUpdate(LOCAL_USER_ID).orElseThrow();
+        Transaction transaction = transactionRepository.findByIdAndUserId(transactionId, LOCAL_USER_ID)
+                .orElseThrow(() -> new TransactionNotFoundException(transactionId));
+        validateType(transaction.getType());
+        FinancialAccount account = validateRequest(request);
+
+        transaction.setFinancialAccount(account);
+        transaction.setType(request.type());
+        transaction.setAmount(request.amount());
+        transaction.setCurrency(account.getCurrency());
+        transaction.setTransactionDate(request.transactionDate());
+        transaction.setCategory(request.category().trim());
+        transaction.setDescription(trimToNull(request.description()));
+
+        // Flush before calculating the snapshot so both accounts reflect the updated transaction.
+        Transaction savedTransaction = transactionRepository.saveAndFlush(transaction);
+        return new TransactionUpdatedResponse(
+                transactionMapper.toDto(savedTransaction),
+                overviewService.getOverview(month)
+        );
+    }
+
+    @Transactional
+    public TransactionDeletedResponse deleteTransaction(Long transactionId, YearMonth month) {
+        userRepository.findForUpdate(LOCAL_USER_ID).orElseThrow();
+        Transaction transaction = transactionRepository.findByIdAndUserId(transactionId, LOCAL_USER_ID)
+                .orElseThrow(() -> new TransactionNotFoundException(transactionId));
+        validateType(transaction.getType());
+
+        transactionRepository.delete(transaction);
+        // Apply the deletion before calculating balances and transaction history.
+        transactionRepository.flush();
+        return new TransactionDeletedResponse(transactionId, overviewService.getOverview(month));
+    }
+
+    private FinancialAccount validateRequest(TransactionRequest request) {
+        validateType(request.type());
+        FinancialAccount account = accountRepository
+                .findByIdAndUserIdAndActiveTrue(request.accountId(), LOCAL_USER_ID)
+                .orElseThrow(() -> new AccountNotFoundException(request.accountId()));
+        if (request.transactionDate().isBefore(account.getBalanceStartDate())) {
+            throw new TransactionBeforeBalanceStartDateException(account.getBalanceStartDate());
+        }
+        return account;
     }
 
     private void validateType(TransactionType type) {

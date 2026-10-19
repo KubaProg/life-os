@@ -4,7 +4,32 @@
 
 **Status:** koncepcja + plan implementacyjny  
 **Cel:** aplikacja przede wszystkim do użytku własnego, z możliwością późniejszego rozwinięcia w produkt  
-**Preferowany stack:** Angular + Spring Boot + PostgreSQL + Docker Compose, później Spring AI / LLM, Google Calendar, voice i ewentualnie n8n
+**Aktualny stack:** Angular + PrimeNG + Capacitor + Spring Boot + MySQL + Docker Compose, później Spring AI / LLM, Google Calendar, voice i ewentualnie n8n
+
+---
+
+## Aktualny zakres MVP — ustalenia 2026-10-19
+
+**Aktualne ustalenia 2026-10-19:** wspólne `Account` / `accounts` zapewnia jeden zakres ID, właściciela, nazwę i walutę. `FinancialAccount` oraz `InvestmentAccount` są profilami ze wspólnym PK/FK przez `@MapsId`. `MoneyTransfer` ma tylko źródło i cel wskazujące `Account`; komenda przekazuje globalne ID rachunków. Przygotowano migrację V5 zachowującą zwykłe konta i przenoszącą ID inwestycji oraz ich referencje; starszego seeda V3 nie przepisujemy. Lokata powstaje z kwotą i pierwszym transferem atomowo, bez stałego konta finansującego w encji. Prototyp frontendu lokaty i transferów przywrócono na prośbę użytkownika do ręcznej oceny. Nie uruchamiano migracji, backendu, testów ani buildu. Szczegóły: [Current-focus.md](../Current-focus.md).
+
+
+Ten dokument zachowuje pełną wizję produktu. Bieżący zakres i kolejność mają pierwszeństwo nad starszą szeroką roadmapą poniżej:
+
+1. Zwykłe konta i podstawowe transakcje są bazą MVP. Dalsze dopracowywanie filtrów/paginacji odkładamy.
+2. Miesięczne przychody, wydatki i stopa oszczędzania są wdrożone i liczone w backendzie. Cashflow pozostaje obliczeniem/polem API, bez osobnego wskaźnika w UI. Podłączenie miesięcznego „Zysku z inwestycji” do rzeczywistej historii nastąpi po domknięciu etapów backendu; szkic kalkulatora nie jest potwierdzoną implementacją.
+3. Następny pakiet: inwestycje — obligacje, lokaty i ETF — z konfiguracją produktu, operacjami, trwałą historią naliczeń/wycen, bieżącą wartością i miesięcznym zyskiem. Nowy miesiąc nie zeruje inwestycji; wykres i historyczne wyniki korzystają z zapisanych danych.
+4. Produkty inwestycyjne mają być prezentowane razem ze zwykłymi kontami, a po otwarciu otrzymywać osobny dashboard właściwy dla typu produktu.
+5. Po inwestycjach cele finansowe oraz powiązane proste projekcje i scenariusze.
+
+Osobne aktywa rzeczowe i zobowiązania oraz pełny net worth zostają pomysłami rozwojowymi poza aktualnym MVP. Obecne konta wystarczają na tym etapie. Opisy tych obszarów zachowujemy do późniejszego wykorzystania.
+
+Dashboard zawiera sekcję „Przepływy finansowe” / „Podsumowanie finansów” z wyborem miesiąca i czterema kompaktowymi wskaźnikami: „Zysk z inwestycji”, przychody, wydatki i stopa oszczędzania. Nie ma osobnej dziennej karty ani kafelka cashflow. Niżej wspólna lista kont i historia. Filtry historii są niezależne od miesiąca podsumowania; agregaty pozostają osobno per waluta.
+
+Wpisana oczekiwana stopa zwrotu służy prognozie. Bieżącą wycenę ETF opieramy na cenie konkretnego funduszu, a odsetki lokat/obligacji na warunkach produktu i czasie. Wycena nie może liczyć dwa razy tej samej gotówki i zakupionej za nią inwestycji. Podatki, opłaty i logika wypłaty będą ustalane per produkt w backendzie. API do indeksu S&P 500 oraz cen ETF jest rozpoznawane; wnioski i oficjalne źródła zapisano w `3-plan-implementacji-stanu-obecnego.md`.
+
+Rzeczywisty miesięczny wynik inwestycji zostanie dostarczony wraz z modelem i historią w bazie; do tego czasu wartość przykładowa ma `mocked: true`. Przechowujemy operacje oraz historię naliczeń/wycen; miesięczny raport nie jest jedynym źródłem prawdy. Odczyt dashboardu nie może drugi raz dopisywać odsetek do kapitału. Kapitalizacja, wypłaty, podatki i opłaty podlegają regułom produktu, a brakujące okresy muszą być odtwarzalne bez codziennego otwierania aplikacji. Niezrealizowanego wyniku nie dopisujemy automatycznie do przychodów transakcyjnych.
+
+Aktualna architektura: Angular + PrimeNG, Android przez Capacitor, MySQL i local single-user `id = 1`; PWA oraz security nie są częścią obecnego zadania. Szczegółowe decyzje i checkpointy: `../Current-focus.md`.
 
 ---
 
@@ -1064,7 +1089,9 @@ To tworzy feedback loop do poprawy przyszłych decyzji.
 
 ---
 
-## 26. Następny krok implementacyjny
+## 26. Pierwotny blueprint implementacyjny — materiał historyczny
+
+Aktualny następny krok to model i pierwszy pełny wycinek inwestycji z historią naliczeń/wycen w MySQL, opisany w `3-plan-implementacji-stanu-obecnego.md` (Etap 5). Poniższa lista zachowuje wcześniejszą szeroką wizję, nie aktualną kolejność prac.
 
 Po tym dokumencie kolejnym sensownym krokiem jest zaprojektowanie **V1 na poziomie implementacyjnym**, czyli:
 

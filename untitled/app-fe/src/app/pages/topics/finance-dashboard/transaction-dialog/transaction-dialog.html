@@ -1,0 +1,63 @@
+  <p-dialog
+    [header]="editingTransaction() ? 'Edytuj transakcję' : 'Dodaj transakcję'"
+    [modal]="true"
+    [visible]="transactionDialogVisible()"
+    [closable]="!financeStore.saving()"
+    [closeOnEscape]="!financeStore.saving()"
+    [dismissableMask]="!financeStore.saving()"
+    [draggable]="false"
+    [style]="{ width: 'min(36rem, calc(100vw - 2rem))' }"
+    (visibleChange)="setTransactionDialogVisible($event)"
+  >
+    <form class="transaction-form" [formGroup]="transactionForm" (ngSubmit)="submitTransaction()">
+      <div class="form-field">
+        <label for="transaction-account">Konto</label>
+        <p-select inputId="transaction-account" formControlName="accountId" [options]="accountOptions()" optionLabel="name" optionValue="id" placeholder="Wybierz konto" appendTo="body" />
+        @if (transactionForm.controls.accountId.touched && transactionForm.controls.accountId.invalid) {
+          <small>Wybierz konto.</small>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="transaction-type">Rodzaj</label>
+        <p-select inputId="transaction-type" formControlName="type" [options]="transactionTypes" optionLabel="label" optionValue="value" appendTo="body" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label for="transaction-amount">Kwota</label>
+          <p-inputnumber inputId="transaction-amount" formControlName="amount" mode="decimal" [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="4" placeholder="0,00" />
+          @if (transactionForm.controls.amount.touched && transactionForm.controls.amount.invalid) {
+            <small>Podaj kwotę większą od zera.</small>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="transaction-date">Data</label>
+          <p-datepicker inputId="transaction-date" formControlName="transactionDate" dateFormat="dd.mm.yy" [maxDate]="today" [showIcon]="true" appendTo="body" />
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="transaction-category">Kategoria</label>
+        <input id="transaction-category" pInputText formControlName="category" maxlength="100" placeholder="np. Jedzenie, Wynagrodzenie" />
+        @if (transactionForm.controls.category.touched && transactionForm.controls.category.invalid) {
+          <small>Podaj kategorię.</small>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="transaction-description">Opis <span>(opcjonalnie)</span></label>
+        <textarea id="transaction-description" pTextarea formControlName="description" maxlength="500" rows="3" placeholder="Krótka notatka"></textarea>
+      </div>
+
+      @if (saveError()) {
+        <p-message severity="error" [text]="saveError()!" />
+      }
+
+      <div class="form-actions">
+        <p-button type="button" label="Anuluj" severity="secondary" [outlined]="true" [disabled]="financeStore.saving()" (onClick)="setTransactionDialogVisible(false)" />
+        <p-button type="submit" [label]="editingTransaction() ? 'Zapisz zmiany' : 'Zapisz transakcję'" [disabled]="financeStore.saving()" icon="pi pi-check" [loading]="financeStore.saving()" />
+      </div>
+    </form>
+  </p-dialog>

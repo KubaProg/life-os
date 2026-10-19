@@ -6,6 +6,9 @@ import com.example.appbe.finance.transaction.TransactionMapper;
 import com.example.appbe.finance.transaction.TransactionRepository;
 import com.example.appbe.user.User;
 import com.example.appbe.user.UserRepository;
+import com.example.appbe.finance.transfer.TransferRepository;
+import com.example.appbe.finance.transfer.TransferDto;
+import com.example.appbe.finance.investment.InvestmentException;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +28,7 @@ public class AccountService {
 
     private final FinancialAccountRepository accountRepository;
     private final UserRepository userRepository;
+    private final TransferRepository transfers;
     private final AccountMapper accountMapper;
     private final AccountBalanceService accountBalanceService;
     private final TransactionRepository transactionRepository;
@@ -33,6 +37,7 @@ public class AccountService {
     public AccountService(
             FinancialAccountRepository accountRepository,
             UserRepository userRepository,
+            TransferRepository transfers,
             AccountMapper accountMapper,
             AccountBalanceService accountBalanceService,
             TransactionRepository transactionRepository,
@@ -40,6 +45,7 @@ public class AccountService {
     ) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
+        this.transfers = transfers;
         this.accountMapper = accountMapper;
         this.accountBalanceService = accountBalanceService;
         this.transactionRepository = transactionRepository;
@@ -68,7 +74,10 @@ public class AccountService {
                         )
                         .stream()
                         .map(transactionMapper::toDto)
-                        .toList()
+                        .toList(),
+                transfers.findByUserIdOrderByDateDescIdDesc(LOCAL_USER_ID).stream()
+                        .map(TransferDto::from).filter(transfer ->
+                                transfer.source().id().equals(accountId) || transfer.destination().id().equals(accountId)).toList()
         );
     }
 
@@ -91,6 +100,7 @@ public class AccountService {
 
     @Transactional
     public AccountDto updateAccount(Long accountId, UpdateAccountRequest request) {
+        userRepository.findForUpdate(LOCAL_USER_ID).orElseThrow();
         if (request.type() != null) {
             validateAccountType(request.type());
         }
@@ -104,6 +114,9 @@ public class AccountService {
             account.setType(request.type());
         }
         if (request.currency() != null) {
+            if (!request.currency().equals(account.getCurrency()) && transfers.countForAccount(accountId) > 0) {
+                throw new InvestmentException("INVESTMENT_ACCOUNT_CURRENCY_LOCKED", "Nie można zmienić waluty konta z transferami.");
+            }
             account.setCurrency(request.currency());
         }
 

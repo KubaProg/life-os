@@ -1,0 +1,10 @@
+.delete-content { display: grid; gap: 1rem; }
+.transaction-summary { display: grid; gap: .4rem; overflow-wrap: anywhere; }
+.transaction-summary span { color: #68766c; font-size: .85rem; }
+.delete-content p { margin: 0; line-height: 1.5; }
+.delete-actions { display: grid; width: 100%; gap: .75rem; }
+:host ::ng-deep .delete-actions .p-button { width: 100%; min-height: 2.75rem; }
+:host ::ng-deep .p-dialog-header-actions .p-button { min-width: 2.75rem; min-height: 2.75rem; }
+@media (min-width: 480px) {
+  .delete-actions { grid-template-columns: auto auto; justify-content: end; }
+}

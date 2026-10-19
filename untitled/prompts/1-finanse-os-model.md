@@ -1,5 +1,23 @@
 # Personal Finance OS - Project Plan
 
+## Aktualizacja kierunku — 2026-10-19
+
+**Aktualne ustalenia 2026-10-19:** wspólne `Account` / `accounts` zapewnia jeden zakres ID, właściciela, nazwę i walutę. `FinancialAccount` oraz `InvestmentAccount` są profilami ze wspólnym PK/FK przez `@MapsId`. `MoneyTransfer` ma tylko źródło i cel wskazujące `Account`; komenda przekazuje globalne ID rachunków. Przygotowano migrację V5 zachowującą zwykłe konta i przenoszącą ID inwestycji oraz ich referencje; starszego seeda V3 nie przepisujemy. Lokata powstaje z kwotą i pierwszym transferem atomowo, bez stałego konta finansującego w encji. Prototyp frontendu lokaty i transferów przywrócono na prośbę użytkownika do ręcznej oceny. Nie uruchamiano migracji, backendu, testów ani buildu. Szczegóły: [Current-focus.md](../Current-focus.md).
+
+
+Dokument zachowuje wcześniejszy plan i opis bazowego modelu. Aktualne uzgodnienia MVP mają pierwszeństwo i znajdują się w [Current-focus.md](../Current-focus.md) oraz [planie stanu obecnego](3-plan-implementacji-stanu-obecnego.md):
+
+- Podsumowanie miesięcznych transakcji jest wdrożone. Następny obszar: inwestycje (obligacje, lokaty i ETF), ich trwała historia naliczeń/wycen oraz rzeczywisty miesięczny zysk. Następnie cele i powiązane projekcje/scenariusze.
+- Docelowo zwykłe konta i produkty inwestycyjne będą na jednej liście UI; typ pozycji otworzy historię zwykłego konta albo osobny dashboard inwestycji z konfiguracją i operacjami.
+- Dashboard ma kompaktowe podsumowanie wybranego miesiąca: „Zysk z inwestycji”, przychody, wydatki i stopa oszczędzania. Nie ma osobnej karty dziennego balansu ani cashflow w UI. Backendowy kalkulator lokaty jest szkicem do przeglądu; frontend inwestycji nie jest jeszcze uzgodniony.
+- Osobne aktywa rzeczowe, zobowiązania i pełny net worth oraz dalsze dopracowanie filtrów transakcji są odłożone; pomysły pozostają w dokumentacji.
+- Model inwestycji rozdzieli konto, instrument, jednostki, cenę, operacje, bieżącą wartość, historię naliczeń/wycen i miesięczny zysk. Nowy miesiąc nie zeruje kapitału ani wcześniejszego zysku; kapitalizacja nie liczy go drugi raz. Wpisany procent jest parametrem prognozy albo oprocentowaniem zgodnym z warunkami produktu; nie zastępuje wyceny rynkowej ETF.
+- API S&P 500 / ETF zostało rozpoznane w planie 3. Dostawca, ticker rzeczywistego ETF-u, podatki, opłaty i dokładne reguły produktu wymagają doprecyzowania przed ich wdrożeniem.
+- Aktualny stack: Angular + PrimeNG, Android przez Capacitor, Spring Boot i MySQL; bez PWA i security, local single-user `id = 1`. Bez kursów walut agregaty pozostają osobno per waluta.
+- W tej sesji aktualizujemy wyłącznie dokumentację. Model i kod nie są teraz rozszerzane.
+
+---
+
 ## 1. Cel projektu
 
 Aplikacja ma być osobistym systemem finansowo-organizacyjnym.
