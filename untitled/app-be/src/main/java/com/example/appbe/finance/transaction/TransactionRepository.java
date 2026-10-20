@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
+    boolean existsByFinancialAccountId(Long financialAccountId);
+
     Optional<Transaction> findByIdAndUserId(Long id, Long userId);
 
     List<Transaction> findTop10ByUserIdOrderByTransactionDateDescCreatedAtDesc(Long userId);

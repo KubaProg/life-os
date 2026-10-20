@@ -2,25 +2,28 @@ import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { catchError, combineLatest, map, of, startWith, Subject, switchMap } from 'rxjs';
-import { InvestmentDetailsDto, investmentOperationLabel, investmentStatusLabel } from '../../../../models/investment.model';
+import { InvestmentDetailsDto, investmentOperationLabel, investmentStatusLabel, investmentTypeLabel, investmentRoute } from '../../../../models/investment.model';
 import { InvestmentApiService } from '../../../../services/investment-api.service';
 import { FinanceStore } from '../../../../services/finance.store';
 import { TransferDialog } from '../transfer-dialog/transfer-dialog';
+import { DepositDialog } from '../deposit-dialog/deposit-dialog';
+import { AccountDeleteDialog } from '../account-delete-dialog/account-delete-dialog';
 
 @Component({
-  selector: 'app-investment-details',
-  imports: [CurrencyPipe, DatePipe, DecimalPipe, RouterLink, ButtonModule, MessageModule, ProgressSpinnerModule, TransferDialog],
-  templateUrl: './investment-details.html',
-  styleUrl: './investment-details.scss'
+  selector: 'app-deposit-details',
+  imports: [CurrencyPipe, DatePipe, DecimalPipe, RouterLink, ButtonModule, MessageModule, ProgressSpinnerModule, TransferDialog, DepositDialog, AccountDeleteDialog],
+  templateUrl: './deposit-details.html',
+  styleUrl: './deposit-details.scss'
 })
-export class InvestmentDetails {
+export class DepositDetails {
   private readonly api = inject(InvestmentApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly store = inject(FinanceStore);
   protected readonly details = signal<InvestmentDetailsDto | null>(null);
@@ -28,6 +31,7 @@ export class InvestmentDetails {
   protected readonly success = signal<string | null>(null);
   protected readonly operationLabel = investmentOperationLabel;
   protected readonly statusLabel = investmentStatusLabel;
+  protected readonly typeLabel = investmentTypeLabel;
   private readonly reload = new Subject<void>();
   protected readonly chart = computed(() => {
     const values = this.details()?.valuations ?? [];
@@ -55,7 +59,9 @@ export class InvestmentDetails {
       }),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(details => {
-      if (details) { this.details.set(details); this.state.set('ready'); }
+      if (details && details.investment.type !== 'DEPOSIT') {
+        void this.router.navigate([investmentRoute(details.investment.type), details.investment.id], { replaceUrl: true });
+      } else if (details) { this.details.set(details); this.state.set('ready'); }
     });
   }
 

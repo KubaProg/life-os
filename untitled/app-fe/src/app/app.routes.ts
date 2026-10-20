@@ -22,7 +22,19 @@ export const routes: Routes = [
   },
   {
     path: 'finanse/inwestycje/:investmentId',
-    loadComponent: () => import('./pages/topics/finance-dashboard/investment-details/investment-details').then(component => component.InvestmentDetails)
+    loadComponent: () => import('./pages/topics/finance-dashboard/deposit-details/deposit-details').then(component => component.DepositDetails)
+  },
+  {
+    path: 'finanse/lokaty/:investmentId',
+    loadComponent: () => import('./pages/topics/finance-dashboard/deposit-details/deposit-details').then(component => component.DepositDetails)
+  },
+  {
+    path: 'finanse/obligacje/:investmentId',
+    loadComponent: () => import('./pages/topics/finance-dashboard/securities-account-details/securities-account-details').then(component => component.SecuritiesAccountDetails)
+  },
+  {
+    path: 'finanse/rachunki-maklerskie/:investmentId',
+    loadComponent: () => import('./pages/topics/finance-dashboard/securities-account-details/securities-account-details').then(component => component.SecuritiesAccountDetails)
   },
   {
     path: '**',

@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 public interface InvestmentOperationRepository extends JpaRepository<InvestmentOperation, Long> {
     List<InvestmentOperation> findByInvestmentIdOrderByOperationDateAscIdAsc(Long investmentId);
     @Query("""
-            select o from InvestmentOperation o where o.investment.account.user.id = :userId
+            select o from InvestmentOperation o where o.transfer.user.id = :userId
               and o.type = :type and o.operationDate between :from and :to
             """)
     List<InvestmentOperation> findByInvestmentUserIdAndTypeAndOperationDateBetween(

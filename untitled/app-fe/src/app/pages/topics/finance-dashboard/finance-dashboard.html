@@ -16,9 +16,6 @@
         [disabled]="financeStore.loading() || financeStore.saving() || !financeStore.accounts().length"
         (onClick)="successMessage.set(null); transactionDialog.open()"
       />
-      <p-button label="Nowa lokata" icon="pi pi-plus" severity="secondary" [outlined]="true"
-        [disabled]="financeStore.loading() || financeStore.saving() || !financeStore.accounts().length"
-        (onClick)="successMessage.set(null); depositDialog.open()" />
       <p-button label="Przenieś środki" icon="pi pi-arrow-right-arrow-left" severity="secondary" [outlined]="true"
         [disabled]="financeStore.loading() || financeStore.saving() || !financeStore.accounts().length"
         (onClick)="successMessage.set(null); transferDialog.open()" />
@@ -125,16 +122,26 @@
             </a>
           }
           @for (investment of financeStore.investments(); track investment.id) {
-            <a class="account" [routerLink]="['/finanse/inwestycje', investment.id]">
+            <a class="account" [routerLink]="[investmentRoute(investment.type), investment.id]">
               <span class="account__mark account__mark--investment">{{ investmentTypeLabel(investment.type).charAt(0) }}</span>
               <div><h3>{{ investment.name }}</h3>
                 <p>{{ investmentTypeLabel(investment.type) }} · {{ investment.currency }} · {{ investmentStatusLabel(investment.status) }}</p>
-                <p>Wartość po szacowanym podatku</p></div>
-              <strong>{{ investment.currentValue | currency: investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+                @if (investment.type !== 'DEPOSIT') { <p>Dostępna gotówka</p> }
+                @else if (investment.status !== 'DRAFT') { <p>Wartość po szacowanym podatku</p> }</div>
+              <strong>{{ investment.status === 'DRAFT' ? 'Do konfiguracji' : (investment.currentValue | currency: investment.currency : 'symbol' : '1.2-2' : 'pl-PL') }}</strong>
             </a>
           }
         </div>
       }
+      <div class="add-account">
+        <p-button label="Dodaj nowe konto" severity="secondary" [text]="true"
+          [disabled]="financeStore.loading() || financeStore.saving()"
+          (onClick)="successMessage.set(null); accountCreateDialog.open()">
+          <ng-template #icon>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14" /></svg>
+          </ng-template>
+        </p-button>
+      </div>
     </section>
 
     <section class="panel transactions-panel" aria-labelledby="history-title">
@@ -183,7 +190,7 @@
                 {{ transaction.type === 'INCOME' ? '+' : '−' }}{{ transaction.amount | currency: transaction.currency : 'symbol' : '1.2-2' : 'pl-PL' }}
               </strong>
               <div class="transaction__actions">
-              <p-button severity="secondary" [text]="true" [ariaLabel]="'Edytuj transakcję: ' + transaction.category" [disabled]="financeStore.saving() || !financeStore.accounts().length" (onClick)="successMessage.set(null); transactionDialog.open(transaction)">
+              <p-button severity="secondary" [text]="true" [ariaLabel]="'Edytuj transakcję: ' + transaction.category" [disabled]="financeStore.saving() || transaction.accountDeleted || !financeStore.accounts().length" (onClick)="successMessage.set(null); transactionDialog.open(transaction)">
                 <ng-template #icon>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                     <path d="m16 3 5 5L8 21H3v-5L16 3Z" />
@@ -209,7 +216,7 @@
     }
   </section>
 
-  <app-deposit-dialog #depositDialog (saved)="successMessage.set($event)" />
+  <app-account-create-dialog #accountCreateDialog />
   <app-transfer-dialog #transferDialog (saved)="successMessage.set($event)" />
   <app-transaction-dialog #transactionDialog (saved)="successMessage.set($event)" />
   <app-transaction-delete-dialog #deleteDialog (deleted)="successMessage.set($event)" />

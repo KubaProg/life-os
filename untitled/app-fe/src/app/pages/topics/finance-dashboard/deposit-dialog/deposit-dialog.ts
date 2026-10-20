@@ -10,6 +10,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { FinanceStore } from '../../../../services/finance.store';
+import { InvestmentDto } from '../../../../models/investment.model';
 
 @Component({
   selector: 'app-deposit-dialog',
@@ -25,7 +26,8 @@ export class DepositDialog {
   protected readonly error = signal<string | null>(null);
   readonly saved = output<string>();
   private requestId = '';
-  protected readonly accounts = computed(() => this.store.accounts().map(account => ({
+  protected readonly investment = signal<InvestmentDto | null>(null);
+  protected readonly accounts = computed(() => this.store.accounts().filter(account => account.currency === this.investment()?.currency).map(account => ({
     ...account, label: `${account.name} · ${account.currency}`
   })));
   protected readonly today = new Date();
@@ -39,10 +41,11 @@ export class DepositDialog {
     maturityDate: this.fb.control<Date | null>(null, Validators.required)
   });
 
-  open(): void {
+  open(investment: InvestmentDto): void {
     if (this.store.saving()) return;
+    this.investment.set(investment);
     this.requestId = crypto.randomUUID();
-    this.form.reset({ name: '', sourceAccountId: this.accounts()[0]?.id ?? null, principal: null,
+    this.form.reset({ name: investment.name, sourceAccountId: this.accounts()[0]?.id ?? null, principal: null,
       annualRate: null, taxRate: 19, startDate: new Date(), maturityDate: null });
     this.error.set(null);
     this.visible.set(true);
@@ -67,13 +70,15 @@ export class DepositDialog {
       return;
     }
     this.error.set(null);
-    this.store.createDeposit({ requestId: this.requestId, name: value.name.trim(), sourceAccountId: value.sourceAccountId,
+    const investment = this.investment();
+    if (!investment) return;
+    this.store.configureDeposit(investment.id, { requestId: this.requestId, name: investment.name, sourceAccountId: value.sourceAccountId,
       principal: value.principal, annualRate: value.annualRate, taxRate: value.taxRate,
       startDate: this.formatDate(value.startDate), maturityDate: this.formatDate(value.maturityDate)
     }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.visible.set(false);
-        this.saved.emit('Lokata została utworzona, a kapitał przeniesiony z wybranego konta.');
+        this.saved.emit('Warunki lokaty zostały zapisane, a kapitał przeniesiony z wybranego konta.');
       },
       error: (error: HttpErrorResponse) => this.error.set(error.error?.message ?? 'Nie udało się zapisać lokaty. Spróbuj ponownie.')
     });

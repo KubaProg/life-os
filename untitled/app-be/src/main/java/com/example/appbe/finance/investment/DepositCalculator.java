@@ -32,7 +32,7 @@ public final class DepositCalculator {
         return new Value(gross, tax, net, principal.add(net));
     }
 
-    public static Value calculate(InvestmentAccount investment, LocalDate asOf) {
+    public static Value calculate(DepositAccount investment, LocalDate asOf) {
         DepositTerms terms = investment.getDepositTerms();
         return calculate(investment.getPrincipal(), terms.getAnnualRate(), terms.getTaxRate(),
                 terms.getStartDate(), terms.getMaturityDate(), asOf);

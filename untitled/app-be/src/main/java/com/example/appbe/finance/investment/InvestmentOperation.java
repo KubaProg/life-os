@@ -12,9 +12,11 @@ import java.time.LocalDate;
 public class InvestmentOperation {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "investment_account_id", nullable = false)
-    private InvestmentAccount investment;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "investment_account_id")
+    private DepositAccount investment;
+    @Column(name = "deleted_investment_currency", length = 3)
+    private String deletedInvestmentCurrency;
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "transfer_id", nullable = false)
     private MoneyTransfer transfer;
@@ -27,14 +29,21 @@ public class InvestmentOperation {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
     protected InvestmentOperation() {}
-    public InvestmentOperation(InvestmentAccount investment, MoneyTransfer transfer, String type, LocalDate date,
+    public InvestmentOperation(DepositAccount investment, MoneyTransfer transfer, String type, LocalDate date,
                                BigDecimal amount) {
         this.investment = investment; this.transfer = transfer; this.type = type;
         this.operationDate = date; this.amount = amount;
     }
     @PrePersist void prePersist() { createdAt = Instant.now(); }
     public Long getId() { return id; }
-    public InvestmentAccount getInvestment() { return investment; }
+    public DepositAccount getInvestment() { return investment; }
+    public String investmentCurrency() { return investment == null ? deletedInvestmentCurrency : investment.getCurrency(); }
+    public void detachInvestment() {
+        if (investment != null) {
+            deletedInvestmentCurrency = investment.getCurrency();
+            investment = null;
+        }
+    }
     public MoneyTransfer getTransfer() { return transfer; }
     public String getType() { return type; }
     public LocalDate getOperationDate() { return operationDate; }

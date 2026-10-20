@@ -22,6 +22,8 @@
           </div>
         </div>
       </header>
+      <p-button class="account-delete" label="Usuń konto" severity="danger" [outlined]="true" [disabled]="financeStore.saving()"
+        (onClick)="accountDeleteDialog.open({ id: selectedAccount.id, name: selectedAccount.name, kind: 'ORDINARY', balance: selectedAccount.currentBalance, currency: selectedAccount.currency })" />
 
       @if (successMessage()) {
         <p-message severity="success" [text]="successMessage()!" />
@@ -32,6 +34,22 @@
         <strong>{{ selectedAccount.currentBalance | currency: selectedAccount.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
         <span>Saldo początkowe, przychody, wydatki i transfery.</span>
       </section>
+
+      @if (!transactions().length && !transfers().length) {
+        <section class="transactions-panel" aria-labelledby="opening-title">
+          <h2 id="opening-title">Saldo początkowe</h2>
+          <p>Ustaw stan konta przed pierwszą transakcją lub transferem. Nowe konto zaczyna od zera.</p>
+          <form [formGroup]="balanceForm" (ngSubmit)="saveOpeningBalance()" class="opening-form">
+            <div class="opening-field"><label for="opening-amount">Saldo ({{ selectedAccount.currency }})</label>
+              <p-inputnumber inputId="opening-amount" formControlName="openingBalance" locale="pl-PL"
+                [minFractionDigits]="2" [maxFractionDigits]="4" /></div>
+            <div class="opening-field"><label for="opening-date">Data salda początkowego</label>
+              <p-datepicker inputId="opening-date" formControlName="balanceStartDate" dateFormat="dd.mm.yy" [readonlyInput]="true" appendTo="body" /></div>
+            @if (balanceError()) { <p-message severity="error" [text]="balanceError()!" /> }
+            <p-button label="Zapisz saldo początkowe" type="submit" [loading]="financeStore.saving()" [disabled]="financeStore.saving()" />
+          </form>
+        </section>
+      }
 
       <section class="transactions-panel" aria-labelledby="transactions-title">
         <div class="section-heading">
@@ -111,5 +129,6 @@
     </section>
   }
   <app-transaction-dialog #transactionDialog (saved)="successMessage.set($event)" />
+  <app-account-delete-dialog #accountDeleteDialog />
   <app-transaction-delete-dialog #deleteDialog (deleted)="successMessage.set($event)" />
 </main>

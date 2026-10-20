@@ -76,6 +76,9 @@ public class TransactionService {
                 .orElseThrow(() -> new TransactionNotFoundException(transactionId));
         validateType(transaction.getType());
         FinancialAccount account = validateRequest(request);
+        if (transaction.isAccountDeleted()) {
+            throw new com.example.appbe.finance.investment.InvestmentException("ACCOUNT_DELETED", "Nie można edytować transakcji usuniętego konta.");
+        }
 
         transaction.setFinancialAccount(account);
         transaction.setType(request.type());

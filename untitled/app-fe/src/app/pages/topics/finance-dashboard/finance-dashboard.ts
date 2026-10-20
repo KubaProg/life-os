@@ -7,19 +7,19 @@ import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
-import { investmentTypeLabel, investmentStatusLabel } from '../../../models/investment.model';
+import { investmentTypeLabel, investmentStatusLabel, investmentRoute } from '../../../models/investment.model';
 import { FinanceStore } from '../../../services/finance.store';
 import { accountTypeColor, accountTypeLabel } from './account-display';
 import { TransactionDeleteDialog } from './transaction-delete-dialog/transaction-delete-dialog';
 import { TransactionHistoryFilters } from './transaction-history-filters/transaction-history-filters';
-import { DepositDialog } from './deposit-dialog/deposit-dialog';
+import { AccountCreateDialog } from './account-create-dialog/account-create-dialog';
 import { TransferDialog } from './transfer-dialog/transfer-dialog';
 import { TransferHistory } from './transfer-history/transfer-history';
 import { TransactionDialog } from './transaction-dialog/transaction-dialog';
 
 @Component({
   selector: 'app-finance-dashboard',
-  imports: [DepositDialog, TransferDialog, TransferHistory, FormsModule, DatePickerModule, DecimalPipe, ButtonModule, CurrencyPipe, DatePipe, MessageModule, ProgressSpinnerModule, RouterLink, TransactionDialog, TransactionDeleteDialog, TransactionHistoryFilters],
+  imports: [AccountCreateDialog, TransferDialog, TransferHistory, FormsModule, DatePickerModule, DecimalPipe, ButtonModule, CurrencyPipe, DatePipe, MessageModule, ProgressSpinnerModule, RouterLink, TransactionDialog, TransactionDeleteDialog, TransactionHistoryFilters],
   templateUrl: './finance-dashboard.html',
   styleUrl: './finance-dashboard.scss'
 })
@@ -29,6 +29,7 @@ export class FinanceDashboard {
   protected readonly accountTypeLabel = accountTypeLabel;
   protected readonly investmentTypeLabel = investmentTypeLabel;
   protected readonly investmentStatusLabel = investmentStatusLabel;
+  protected readonly investmentRoute = investmentRoute;
   protected readonly successMessage = signal<string | null>(null);
 
   protected readonly selectedMonth = signal(this.initialMonth());

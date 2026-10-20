@@ -2,11 +2,22 @@
   <div class="investment-page">
     <a class="back-link" routerLink="/finanse">← Wszystkie finanse</a>
     @if (state() === 'loading') {
-      <div class="load-state" role="status"><p-progress-spinner ariaLabel="Ładowanie lokaty" [style]="{ width: '2.5rem', height: '2.5rem' }" /></div>
+      <div class="load-state" role="status"><p-progress-spinner ariaLabel="Ładowanie inwestycji" [style]="{ width: '2.5rem', height: '2.5rem' }" /></div>
     } @else if (details(); as data) {
-      <header><p class="eyebrow">Lokata · {{ data.investment.currency }}</p><h1>{{ data.investment.name }}</h1>
+      <header><p class="eyebrow">{{ typeLabel(data.investment.type) }} · {{ data.investment.currency }}</p><h1>{{ data.investment.name }}</h1>
         <p>{{ statusLabel(data.investment.status) }}</p></header>
+      <p-button label="Usuń konto" severity="danger" [outlined]="true" [disabled]="store.saving()"
+        (onClick)="accountDeleteDialog.open({ id: data.investment.id, name: data.investment.name, kind: 'DEPOSIT', balance: data.investment.currentValue, currency: data.investment.currency, withdrawable: data.investment.status !== 'ACTIVE' })" />
       @if (success()) { <p-message severity="success" [text]="success()!" /> }
+      @if (data.investment.status === 'DRAFT') {
+        <section class="panel" aria-labelledby="setup-title">
+          <h2 id="setup-title">Konto zostało utworzone</h2>
+            <p>Uzupełnij warunki lokaty i wybierz konto, z którego wpłacisz kapitał.</p>
+            <p-button label="Uzupełnij warunki lokaty" icon="pi pi-plus" [disabled]="store.saving() || store.loading()"
+              (onClick)="depositDialog.open(data.investment)" />
+          <p class="note">Nie przeniesiono żadnych środków.</p>
+        </section>
+      } @else {
       <section class="metrics" aria-label="Wartość i wynik lokaty">
         <article><h2>Wartość po podatku</h2><strong>{{ data.investment.currentValue | currency: data.investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
         <article><h2>Kapitał początkowy</h2><strong>{{ data.investment.principal | currency: data.investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
@@ -15,7 +26,7 @@
       </section>
       <p class="note">Naliczenie na {{ data.investment.valuedOn | date: 'd MMM y' : undefined : 'pl-PL' }}, za pełne zakończone dni. Podatek według wpisanej stawki: {{ data.investment.estimatedTax | currency: data.investment.currency : 'symbol' : '1.2-2' : 'pl-PL' }}. Do rozliczenia jest to szacunek.</p>
       @if (data.investment.status === 'MATURED') {
-        <p-button label="Przenieś całość na konto" [disabled]="store.saving()" (onClick)="transferDialog.open({ kind: 'INVESTMENT', id: data.investment.id }, data.investment.currentValue)" />
+        <p-button label="Przenieś całość na konto" [disabled]="store.saving()" (onClick)="transferDialog.open({ kind: 'DEPOSIT', id: data.investment.id }, data.investment.currentValue)" />
       }
       <section class="panel" aria-labelledby="growth-title"><h2 id="growth-title">Wzrost wartości lokaty</h2>
         @if (chart(); as growth) {
@@ -39,10 +50,13 @@
             <strong>{{ operation.amount | currency: operation.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></article>
         }
       </section>
+      }
     } @else {
       <section class="panel" role="alert"><h1>{{ state() === 'not-found' ? 'Nie znaleziono inwestycji' : 'Nie udało się pobrać inwestycji' }}</h1>
         <p-button label="Spróbuj ponownie" [outlined]="true" (onClick)="refresh()" /></section>
     }
   </div>
   <app-transfer-dialog #transferDialog (saved)="refresh($event)" />
+  <app-account-delete-dialog #accountDeleteDialog />
+  <app-deposit-dialog #depositDialog (saved)="refresh($event)" />
 </main>

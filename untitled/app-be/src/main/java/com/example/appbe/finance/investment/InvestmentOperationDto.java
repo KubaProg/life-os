@@ -7,6 +7,6 @@ public record InvestmentOperationDto(Long id, Long transferId, String type, Loca
                                      String currency, BigDecimal amount) {
     public static InvestmentOperationDto from(InvestmentOperation operation) {
         return new InvestmentOperationDto(operation.getId(), operation.getTransfer().getId(), operation.getType(),
-                operation.getOperationDate(), operation.getInvestment().getCurrency(), operation.getAmount());
+                operation.getOperationDate(), operation.investmentCurrency(), operation.getAmount());
     }
 }

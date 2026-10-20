@@ -1,0 +1,28 @@
+<p-dialog header="Dodaj nowe konto" [modal]="true" [visible]="visible()" (visibleChange)="close($event)"
+  [closable]="!store.saving()" [closeOnEscape]="!store.saving()" [draggable]="false"
+  [style]="{ width: 'min(30rem, calc(100vw - 2rem))' }">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="account-form">
+    <div class="field"><label for="create-kind">Rodzaj konta</label>
+      <p-select inputId="create-kind" formControlName="kind" [options]="kinds" optionLabel="label" optionValue="value" appendTo="body" /></div>
+    @if (kind() === 'INVESTMENT') {
+      <div class="field"><label for="create-investment-type">Typ inwestycji</label>
+        <p-select inputId="create-investment-type" formControlName="investmentType" [options]="investmentTypes" optionLabel="label" optionValue="value" appendTo="body" /></div>
+    } @else {
+      <div class="field"><label for="create-account-type">Typ konta</label>
+        <p-select inputId="create-account-type" formControlName="accountType" [options]="accountTypes" optionLabel="label" optionValue="value" appendTo="body" /></div>
+    }
+    <div class="field"><label for="create-name">Nazwa</label>
+      <input id="create-name" pInputText formControlName="name" maxlength="160" autocomplete="off" placeholder="np. Moje oszczędności" /></div>
+    <div class="field"><label for="create-currency">Waluta</label>
+      <input id="create-currency" pInputText formControlName="currency" maxlength="3" autocomplete="off" autocapitalize="characters" placeholder="PLN" /></div>
+    <p class="note">Na początek tylko podstawowe dane. Po utworzeniu przejdziesz do szczegółów konta.</p>
+    @if (kind() === 'INVESTMENT' && investmentType() !== 'DEPOSIT') {
+      <p-message severity="info" text="Konto powstanie bez środków. Później możesz je zasilać transferami. Zakup papierów wartościowych będzie osobną operacją." />
+    }
+    @if (error()) { <p-message severity="error" [text]="error()!" /> }
+    <div class="actions">
+      <p-button label="Anuluj" severity="secondary" [outlined]="true" [disabled]="store.saving()" (onClick)="close(false)" />
+      <p-button label="Utwórz konto" type="submit" [loading]="store.saving()" [disabled]="store.saving()" />
+    </div>
+  </form>
+</p-dialog>

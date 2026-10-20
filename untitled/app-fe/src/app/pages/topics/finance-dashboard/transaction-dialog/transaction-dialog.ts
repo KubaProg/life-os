@@ -72,7 +72,7 @@ export class TransactionDialog {
   }
 
   open(transaction: TransactionDto | null = null): void {
-    if (this.financeStore.saving()) {
+    if (this.financeStore.saving() || transaction?.accountDeleted) {
       return;
     }
     const accountId = transaction?.accountId ?? this.financeStore.accounts()[0]?.id;

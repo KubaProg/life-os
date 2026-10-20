@@ -4,8 +4,11 @@ import { Observable } from 'rxjs';
 
 import {
   AccountDetailsDto,
+  AccountDeletedResponse,
+  DeleteAccountRequest,
   AccountDto,
   AccountRequest,
+  OpeningBalanceRequest,
   UpdateAccountRequest
 } from '../models/account.model';
 
@@ -24,6 +27,14 @@ export class AccountApiService {
 
   createAccount(request: AccountRequest): Observable<AccountDto> {
     return this.http.post<AccountDto>(this.accountsUrl, request);
+  }
+
+  deleteAccount(id: number, request: DeleteAccountRequest, month?: string): Observable<AccountDeletedResponse> {
+    return this.http.delete<AccountDeletedResponse>(`${this.accountsUrl}/${id}`, { body: request, params: month ? { month } : {} });
+  }
+
+  configureOpeningBalance(id: number, request: OpeningBalanceRequest): Observable<AccountDto> {
+    return this.http.put<AccountDto>(`${this.accountsUrl}/${id}/opening-balance`, request);
   }
 
   updateAccount(accountId: number, request: UpdateAccountRequest): Observable<AccountDto> {

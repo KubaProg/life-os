@@ -2,6 +2,9 @@ package com.example.appbe.finance.transfer;
 
 import com.example.appbe.finance.account.*;
 import com.example.appbe.finance.investment.*;
+import com.example.appbe.finance.bond.BondAccountService;
+import com.example.appbe.finance.brokerage.BrokerageAccountService;
+import java.math.BigDecimal;
 import com.example.appbe.finance.overview.FinanceOverviewService;
 import com.example.appbe.user.User;
 import java.time.LocalDate;
@@ -16,17 +19,21 @@ public class TransferService {
     private final TransferRepository transfers;
     private final FinancialAccountRepository cashAccounts;
     private final AccountBalanceService balances;
-    private final InvestmentQueryService investments;
-    private final InvestmentAccountRepository investmentAccounts;
+    private final DepositQueryService investments;
+    private final BondAccountService bonds;
+    private final BrokerageAccountService brokerage;
+    private final DepositAccountRepository investmentAccounts;
     private final InvestmentOperationRepository operations;
     private final FinanceOverviewService overview;
 
     public TransferService(AccountRepository accountRegistry, TransferRepository transfers, FinancialAccountRepository cashAccounts,
-            AccountBalanceService balances, InvestmentQueryService investments, InvestmentAccountRepository investmentAccounts,
+            AccountBalanceService balances, DepositQueryService investments, DepositAccountRepository investmentAccounts,
+            BondAccountService bonds, BrokerageAccountService brokerage,
             InvestmentOperationRepository operations, FinanceOverviewService overview) {
         this.accountRegistry = accountRegistry;
         this.transfers = transfers; this.cashAccounts = cashAccounts; this.balances = balances;
         this.investments = investments; this.investmentAccounts = investmentAccounts;
+        this.bonds = bonds; this.brokerage = brokerage;
         this.operations = operations; this.overview = overview;
     }
 
@@ -49,16 +56,16 @@ public class TransferService {
         if (request.date().isAfter(today)) throw new InvestmentException("INVALID_TRANSFER_DATE", "Transfer nie może mieć przyszłej daty.");
         TransferSide source = resolve(request.sourceAccountId(), request.date());
         TransferSide destination = resolve(request.destinationAccountId(), request.date());
-        FinancialAccount sourceCash = source.ordinary();
-        InvestmentAccount sourceInvestment = source.investment();
-        InvestmentAccount destinationInvestment = destination.investment();
+        DepositAccount sourceInvestment = source.investment();
+        DepositAccount destinationInvestment = destination.investment();
         if (!source.account().getCurrency().equals(destination.account().getCurrency())) {
             throw new InvestmentException("TRANSFER_CURRENCY_MISMATCH", "Transfer wymaga tej samej waluty po obu stronach.");
         }
-        if (sourceCash != null && balances.calculateCurrentBalance(sourceCash).compareTo(request.amount()) < 0) {
+        if (source.availableCash() != null && source.availableCash().compareTo(request.amount()) < 0) {
             throw new InvestmentException("INSUFFICIENT_FUNDS", "Na koncie źródłowym brakuje środków.");
         }
-        if (sourceInvestment != null && destinationInvestment != null) {
+        if ((sourceInvestment != null && destination.account().getKind() != AccountKind.ORDINARY) ||
+                (destinationInvestment != null && source.account().getKind() != AccountKind.ORDINARY)) {
             throw new InvestmentException("UNSUPPORTED_TRANSFER", "W tym wariancie lokata może być finansowana i rozliczana przez zwykłe konto.");
         }
         if (destinationInvestment != null) {
@@ -97,7 +104,7 @@ public class TransferService {
         return new TransferResponse(transfer.getId(), overview.getOverview(month));
     }
 
-    private record TransferSide(Account account, FinancialAccount ordinary, InvestmentAccount investment) {}
+    private record TransferSide(Account account, DepositAccount investment, BigDecimal availableCash) {}
 
     private TransferSide resolve(Long id, LocalDate date) {
         Account account = accountRegistry.findByIdAndUserIdAndActiveTrue(id, 1L)
@@ -110,14 +117,16 @@ public class TransferService {
                 if (date.isBefore(ordinary.getBalanceStartDate())) {
                     throw new InvestmentException("INVALID_TRANSFER_DATE", "Data transferu nie może poprzedzać salda początkowego żadnego z kont.");
                 }
-                yield new TransferSide(account, ordinary, null);
+                yield new TransferSide(account, null, balances.calculateCurrentBalance(ordinary));
             }
-            case INVESTMENT -> new TransferSide(account, null, investments.getOwned(id));
+            case DEPOSIT -> new TransferSide(account, investments.getOwned(id), null);
+            case BOND -> new TransferSide(account, null, bonds.cashBalance(id));
+            case BROKERAGE -> new TransferSide(account, null, brokerage.cashBalance(id));
         };
     }
-    private void requireDeposit(InvestmentAccount investment) {
-        if (investment.getType() != InvestmentType.DEPOSIT) {
-            throw new InvestmentException("UNSUPPORTED_INVESTMENT_TYPE", "Reguły transferów dla tego typu inwestycji nie zostały jeszcze wdrożone.");
+    private void requireDeposit(DepositAccount investment) {
+        if (investment.getDepositTerms() == null) {
+            throw new InvestmentException("INVESTMENT_NOT_CONFIGURED", "Najpierw uzupełnij warunki lokaty w szczegółach konta.");
         }
     }
 }

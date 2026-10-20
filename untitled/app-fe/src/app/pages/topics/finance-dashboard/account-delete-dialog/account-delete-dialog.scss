@@ -1,0 +1,9 @@
+.delete-content { display: grid; gap: 1rem; overflow-wrap: anywhere; }
+.delete-content p { margin: 0; line-height: 1.5; }
+.destination-field { display: grid; gap: .5rem; min-width: 0; }
+.destination-field label { font-size: .85rem; font-weight: 600; }
+:host ::ng-deep .destination-field .p-select { width: 100%; min-width: 0; min-height: 44px; }
+.delete-actions { display: grid; width: 100%; gap: .75rem; }
+:host ::ng-deep .delete-actions .p-button { width: 100%; min-height: 44px; }
+:host ::ng-deep .p-dialog-header-actions .p-button { min-width: 44px; min-height: 44px; }
+@media (min-width: 480px) { .delete-actions { grid-template-columns: auto auto; justify-content: end; } }

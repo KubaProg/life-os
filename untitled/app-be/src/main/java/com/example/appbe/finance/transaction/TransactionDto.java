@@ -12,6 +12,11 @@ public record TransactionDto(
         String currency,
         LocalDate transactionDate,
         String category,
-        String description
+        String description,
+        boolean accountDeleted
 ) {
+    public TransactionDto(Long id, Long accountId, String accountName, TransactionType type, BigDecimal amount,
+            String currency, LocalDate transactionDate, String category, String description) {
+        this(id, accountId, accountName, type, amount, currency, transactionDate, category, description, false);
+    }
 }

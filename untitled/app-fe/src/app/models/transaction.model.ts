@@ -4,6 +4,7 @@ export interface TransactionDto {
   id: number;
   accountId: number;
   accountName: string;
+  accountDeleted?: boolean;
   type: TransactionType;
   amount: number;
   currency: string;

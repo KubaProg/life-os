@@ -13,25 +13,45 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class InvestmentService {
-    private final InvestmentQueryService queries;
-    private final InvestmentAccountRepository investments;
+public class DepositService {
+    private final DepositQueryService queries;
+    private final DepositAccountRepository investments;
     private final TransferService transfers;
     private final TransferRepository transferRepository;
     private final FinanceOverviewService overview;
     private final FinancialAccountRepository cashAccounts;
-    public InvestmentService(InvestmentQueryService queries, InvestmentAccountRepository investments, TransferService transfers, FinancialAccountRepository cashAccounts, TransferRepository transferRepository, FinanceOverviewService overview) {
+    public DepositService(DepositQueryService queries, DepositAccountRepository investments, TransferService transfers, FinancialAccountRepository cashAccounts, TransferRepository transferRepository, FinanceOverviewService overview) {
         this.queries = queries; this.investments = investments; this.transfers = transfers; this.cashAccounts = cashAccounts; this.transferRepository = transferRepository; this.overview = overview;
     }
     @Transactional
     public InvestmentMutationResponse createDeposit(DepositRequest request, YearMonth month) {
+        return saveDeposit(null, request, month);
+    }
+
+    @Transactional
+    public InvestmentMutationResponse createAccount(InvestmentAccountRequest request, YearMonth month) {
+        if (request.type() != InvestmentType.DEPOSIT) {
+            throw new InvestmentException("INVALID_DEPOSIT_TYPE", "Serwis lokat tworzy tylko konta lokat.");
+        }
+        User user = queries.lockOwner();
+        DepositAccount account = investments.saveAndFlush(
+                new DepositAccount(user, request.name().trim(), request.currency()));
+        return new InvestmentMutationResponse(account.getId(), overview.getOverview(month));
+    }
+
+    @Transactional
+    public InvestmentMutationResponse configureDeposit(Long id, DepositRequest request, YearMonth month) {
+        return saveDeposit(id, request, month);
+    }
+
+    private InvestmentMutationResponse saveDeposit(Long id, DepositRequest request, YearMonth month) {
         User user = queries.lockOwner();
         MoneyTransfer prior = transferRepository.findByRequestIdAndUserId(request.requestId().toString(), 1L).orElse(null);
         if (prior != null) {
-            InvestmentAccount existing = prior.getDestinationAccount().getKind() == AccountKind.INVESTMENT
+            DepositAccount existing = prior.getDestinationAccount() != null && prior.getDestinationAccount().getKind() == AccountKind.DEPOSIT
                     ? investments.findByIdAndUserId(prior.getDestinationAccount().getId(), 1L).orElse(null) : null;
             DepositTerms terms = existing == null ? null : existing.getDepositTerms();
-            if (existing == null || terms == null || prior.getSourceAccount().getKind() != AccountKind.ORDINARY ||
+            if (existing == null || (id != null && !id.equals(existing.getId())) || terms == null || prior.getSourceAccount() == null || prior.getSourceAccount().getKind() != AccountKind.ORDINARY ||
                     !prior.getSourceAccount().getId().equals(request.sourceAccountId()) ||
                     !existing.getName().equals(request.name().trim()) || existing.getPrincipal().compareTo(request.principal()) != 0 ||
                     !terms.getStartDate().equals(request.startDate()) || !terms.getMaturityDate().equals(request.maturityDate()) ||
@@ -55,8 +75,21 @@ public class InvestmentService {
                 maximumValue.grossProfit().precision() - maximumValue.grossProfit().scale() > 15) {
             throw new InvestmentException("DEPOSIT_AMOUNT_TOO_LARGE", "Kwota wraz z odsetkami przekracza obsługiwany zakres.");
         }
-        InvestmentAccount investment = investments.saveAndFlush(new InvestmentAccount(user, request.name().trim(), source.getCurrency(),
-                request.principal(), new DepositTerms(request.annualRate(), request.taxRate(), request.startDate(), request.maturityDate())));
+        DepositTerms terms = new DepositTerms(request.annualRate(), request.taxRate(), request.startDate(), request.maturityDate());
+        DepositAccount investment;
+        if (id == null) {
+            investment = investments.saveAndFlush(new DepositAccount(user, request.name().trim(), source.getCurrency(), request.principal(), terms));
+        } else {
+            investment = queries.getOwned(id);
+            if (investment.getDepositTerms() != null || investment.getFundedOn() != null) {
+                throw new InvestmentException("INVESTMENT_ALREADY_CONFIGURED", "Warunki można uzupełnić tylko dla nowej, nieskonfigurowanej lokaty.");
+            }
+            if (!investment.getCurrency().equals(source.getCurrency()) || !investment.getName().equals(request.name().trim())) {
+                throw new InvestmentException("INVESTMENT_ACCOUNT_MISMATCH", "Wybierz konto źródłowe w walucie lokaty. Nazwa lokaty musi pozostać zgodna z kontem.");
+            }
+            investment.configureDeposit(request.principal(), terms);
+            investments.flush();
+        }
         // Both the account and its initial funding commit together, or neither is saved.
         TransferResponse funding = transfers.transfer(new TransferRequest(request.requestId(),
                 source.getId(), investment.getId(),

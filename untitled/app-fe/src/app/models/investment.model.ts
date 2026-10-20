@@ -11,14 +11,19 @@ export interface InvestmentDto {
   grossProfit: number;
   estimatedTax: number;
   netProfit: number;
-  annualRate: number;
-  taxRate: number;
-  calculationRule: string;
-  capitalization: 'AT_MATURITY';
-  startDate: string;
-  maturityDate: string;
+  annualRate: number | null;
+  taxRate: number | null;
+  calculationRule: string | null;
+  capitalization: 'AT_MATURITY' | null;
+  startDate: string | null;
+  maturityDate: string | null;
   valuedOn: string;
-  status: 'AWAITING_FUNDING' | 'ACTIVE' | 'MATURED' | 'SETTLED';
+  status: 'DRAFT' | 'READY' | 'AWAITING_FUNDING' | 'ACTIVE' | 'MATURED' | 'SETTLED';
+}
+export interface InvestmentAccountRequest {
+  name: string;
+  currency: string;
+  type: InvestmentType;
 }
 export interface DepositRequest {
   requestId: string;
@@ -59,8 +64,13 @@ export const investmentTypeLabel = (type: InvestmentType): string => ({
   DEPOSIT: 'Lokata', BOND: 'Obligacje', ETF: 'ETF', OTHER: 'Inwestycja'
 })[type];
 export const investmentStatusLabel = (status: InvestmentDto['status']): string => ({
-  AWAITING_FUNDING: 'Oczekuje na wpłatę', ACTIVE: 'Aktywna', MATURED: 'Do wypłaty', SETTLED: 'Rozliczona'
+  DRAFT: 'Do konfiguracji', READY: 'Gotowe', AWAITING_FUNDING: 'Oczekuje na wpłatę', ACTIVE: 'Aktywna', MATURED: 'Do wypłaty', SETTLED: 'Rozliczona'
 })[status];
+export const investmentRoute = (type: InvestmentType): string => ({
+  DEPOSIT: '/finanse/lokaty', BOND: '/finanse/obligacje', ETF: '/finanse/rachunki-maklerskie', OTHER: '/finanse/rachunki-maklerskie'
+})[type];
+export const investmentAccountKind = (type: InvestmentType): 'DEPOSIT' | 'BOND' | 'BROKERAGE' =>
+  type === 'DEPOSIT' ? 'DEPOSIT' : type === 'BOND' ? 'BOND' : 'BROKERAGE';
 export const investmentOperationLabel = (type: InvestmentOperationDto['type']): string => ({
   FUNDING: 'Założenie lokaty', PRINCIPAL_RETURN: 'Zwrot kapitału', INTEREST_PAYOUT: 'Wypłata odsetek'
 })[type];

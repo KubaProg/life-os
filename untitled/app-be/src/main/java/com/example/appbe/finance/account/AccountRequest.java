@@ -20,11 +20,9 @@ public record AccountRequest(
         @Pattern(regexp = "[A-Z]{3}")
         String currency,
 
-        @NotNull
         @Digits(integer = 15, fraction = 4)
         BigDecimal openingBalance,
 
-        @NotNull
         LocalDate balanceStartDate
 ) {
 }

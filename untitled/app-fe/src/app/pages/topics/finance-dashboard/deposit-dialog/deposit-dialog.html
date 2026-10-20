@@ -1,10 +1,11 @@
-<p-dialog header="Nowa lokata" [modal]="true" [visible]="visible()" (visibleChange)="close($event)"
+<p-dialog header="Uzupełnij warunki lokaty" [modal]="true" [visible]="visible()" (visibleChange)="close($event)"
   [closable]="!store.saving()" [closeOnEscape]="!store.saving()" [draggable]="false"
   [style]="{ width: 'min(40rem, calc(100vw - 2rem))' }">
   <form [formGroup]="form" (ngSubmit)="submit()" class="investment-form">
     <p class="note">Stałe oprocentowanie, naliczanie za zakończone dni (365/366 dni w roku), wypłata odsetek na koniec. Ten wariant nie obsługuje dopłat ani wcześniejszego zerwania.</p>
-    <div class="field"><label for="deposit-name">Nazwa lokaty</label>
-      <input id="deposit-name" pInputText formControlName="name" maxlength="160" placeholder="np. Lokata na wakacje" /></div>
+    @if (!accounts().length) {
+      <p-message severity="warn" text="Do wpłaty potrzebujesz zwykłego konta w walucie lokaty. Dodaj je z listy kont." />
+    }
     <div class="field"><label for="deposit-account">Skąd pobrać kapitał?</label>
       <p-select inputId="deposit-account" formControlName="sourceAccountId" [options]="accounts()" optionLabel="label" optionValue="id" appendTo="body" /></div>
     <div class="field"><label for="deposit-principal">Kapitał (w walucie wybranego konta)</label>
@@ -21,11 +22,11 @@
       <div class="field"><label for="deposit-end">Koniec (bez naliczania za ten dzień)</label>
         <p-datepicker inputId="deposit-end" formControlName="maturityDate" dateFormat="dd.mm.yy" [readonlyInput]="true" appendTo="body" /></div>
     </div>
-    <p class="note">Kapitał zostanie przeniesiony przy utworzeniu lokaty. Wariant obsługuje okres od 1 dnia do 10 lat. Wartość netto uwzględnia szacowany podatek według wpisanej stawki.</p>
+    <p class="note">Zapisanie warunków przeniesie kapitał z wybranego konta na tę lokatę. Wariant obsługuje okres od 1 dnia do 10 lat. Wartość netto uwzględnia szacowany podatek według wpisanej stawki.</p>
     @if (error()) { <p-message severity="error" [text]="error()!" /> }
     <div class="actions">
       <p-button label="Anuluj" type="button" severity="secondary" [outlined]="true" [disabled]="store.saving()" (onClick)="close(false)" />
-      <p-button label="Utwórz lokatę" type="submit" [loading]="store.saving()" [disabled]="store.saving() || store.loading()" />
+      <p-button label="Zapisz i wpłać kapitał" type="submit" [loading]="store.saving()" [disabled]="store.saving() || store.loading() || !accounts().length" />
     </div>
   </form>
 </p-dialog>

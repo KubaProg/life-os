@@ -1,7 +1,7 @@
 import type { FinanceOverviewDto } from './finance-overview.model';
 
 export interface AccountReference {
-  kind: 'ORDINARY' | 'INVESTMENT';
+  kind: 'ORDINARY' | 'DEPOSIT' | 'BOND' | 'BROKERAGE';
   id: number;
 }
 export interface TransferRequest {

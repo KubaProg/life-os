@@ -7,10 +7,8 @@ public record TransferDto(Long id, AccountReference source, String sourceName,
                           AccountReference destination, String destinationName,
                           BigDecimal amount, String currency, LocalDate date) {
     public static TransferDto from(MoneyTransfer transfer) {
-        var source = transfer.getSourceAccount();
-        var destination = transfer.getDestinationAccount();
-        return new TransferDto(transfer.getId(), new AccountReference(source.getKind(), source.getId()), source.getName(),
-                new AccountReference(destination.getKind(), destination.getId()), destination.getName(),
+        return new TransferDto(transfer.getId(), transfer.sourceReference(), transfer.sourceName(),
+                transfer.destinationReference(), transfer.destinationName(),
                 transfer.getAmount(), transfer.getCurrency(), transfer.getDate());
     }
 }

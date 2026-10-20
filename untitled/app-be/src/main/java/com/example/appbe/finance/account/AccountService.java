@@ -90,8 +90,8 @@ public class AccountService {
                 request.name().trim(),
                 request.type(),
                 request.currency(),
-                request.openingBalance(),
-                request.balanceStartDate()
+                request.openingBalance() == null ? java.math.BigDecimal.ZERO : request.openingBalance(),
+                request.balanceStartDate() == null ? java.time.LocalDate.now(java.time.ZoneId.of("Europe/Warsaw")) : request.balanceStartDate()
         );
 
         FinancialAccount savedAccount = accountRepository.save(account);
@@ -120,6 +120,18 @@ public class AccountService {
             account.setCurrency(request.currency());
         }
 
+        return toDto(account);
+    }
+
+    @Transactional
+    public AccountDto configureOpeningBalance(Long accountId, OpeningBalanceRequest request) {
+        userRepository.findForUpdate(LOCAL_USER_ID).orElseThrow();
+        FinancialAccount account = getActiveAccountEntity(accountId);
+        if (transfers.countForAccount(accountId) > 0 || transactionRepository.existsByFinancialAccountId(accountId)) {
+            throw new InvestmentException("ACCOUNT_HAS_OPERATIONS", "Saldo początkowe można ustawić tylko przed pierwszą transakcją lub transferem.");
+        }
+        account.setOpeningBalance(request.openingBalance());
+        account.setBalanceStartDate(request.balanceStartDate());
         return toDto(account);
     }
 

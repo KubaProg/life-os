@@ -1,0 +1,40 @@
+<p-dialog header="Usunąć konto?" [modal]="true" [visible]="selectedAccount() !== null"
+  [closable]="!store.saving()" [closeOnEscape]="!store.saving()" [dismissableMask]="false"
+  [draggable]="false" [resizable]="false" [style]="{ width: 'min(28rem, calc(100vw - 2rem))' }"
+  (visibleChange)="!$event && close()">
+  @if (selectedAccount(); as account) {
+    <div class="delete-content">
+      <strong>{{ account.name }}</strong>
+      <p>Pozostałe środki: <strong>{{ account.balance | currency: account.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong></p>
+      @if (account.balance < 0) {
+        <p-message severity="warn" text="Przed usunięciem konta ureguluj jego ujemne saldo." />
+      } @else if (account.withdrawable === false) {
+        <p-message severity="warn" text="Lokata może zostać usunięta po terminie zakończenia. Wcześniejsze zerwanie nie jest jeszcze obsługiwane." />
+      } @else if (account.balance > 0) {
+        <div class="destination-field">
+          <label for="delete-account-destination">Na jakie konto przenieść środki?</label>
+          <p-select inputId="delete-account-destination" [ngModel]="destinationId()" (ngModelChange)="destinationId.set($event)"
+            [options]="destinations()" optionLabel="label" optionValue="id" placeholder="Wybierz konto"
+            [disabled]="store.saving()" appendTo="body" />
+        </div>
+        @if (!destinations().length) {
+          <p-message severity="warn" text="Dodaj najpierw inne zwykłe konto w tej samej walucie, na które można przenieść pieniądze." />
+        }
+        <p>Cała kwota zostanie przeniesiona przed usunięciem konta. Nie musisz wpisywać jej ponownie.</p>
+      }
+      @if (account.kind === 'DEPOSIT' && account.balance > 0) {
+        <p>Kwota uwzględnia szacowany podatek od odsetek.</p>
+      }
+      <p>Konto zostanie trwale usunięte. Tej operacji nie można cofnąć.</p>
+      <p>Historia transakcji i transferów pozostanie z oznaczeniem usuniętego konta.</p>
+      @if (error()) { <div role="alert"><p-message severity="error" [text]="error()!" /></div> }
+    </div>
+  }
+  <ng-template #footer>
+    <div class="delete-actions">
+      <p-button label="Anuluj" severity="secondary" [outlined]="true" [disabled]="store.saving()" (onClick)="close()" />
+      <p-button [label]="(selectedAccount()?.balance ?? 0) > 0 ? 'Przenieś środki i usuń' : 'Usuń konto'" severity="danger"
+        [disabled]="store.saving() || !canDelete()" [loading]="store.saving()" (onClick)="confirmDelete()" />
+    </div>
+  </ng-template>
+</p-dialog>

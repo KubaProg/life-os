@@ -2,11 +2,16 @@ package com.example.appbe.finance.account;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.time.YearMonth;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -17,14 +22,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class AccountController {
 
     private final AccountService accountService;
+    private final AccountDeletionService deletionService;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService, AccountDeletionService deletionService) {
         this.accountService = accountService;
+        this.deletionService = deletionService;
     }
 
     @GetMapping
     public List<AccountDto> getActiveAccounts() {
         return accountService.getActiveAccounts();
+    }
+
+    @DeleteMapping("/{accountId}")
+    public AccountDeletedResponse deleteAccount(@PathVariable Long accountId, @Valid @RequestBody DeleteAccountRequest request,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
+        return deletionService.delete(accountId, AccountKind.ORDINARY, request, month);
     }
 
     @GetMapping("/{accountId}")
@@ -45,4 +58,10 @@ public class AccountController {
     ) {
         return accountService.updateAccount(accountId, request);
     }
+
+    @PutMapping("/{accountId}/opening-balance")
+    public AccountDto configureOpeningBalance(@PathVariable Long accountId, @Valid @RequestBody OpeningBalanceRequest request) {
+        return accountService.configureOpeningBalance(accountId, request);
+    }
+
 }

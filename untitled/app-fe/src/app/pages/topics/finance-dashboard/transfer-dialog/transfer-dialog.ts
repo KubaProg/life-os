@@ -9,6 +9,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { AccountReference } from '../../../../models/transfer.model';
+import { investmentAccountKind, investmentTypeLabel } from '../../../../models/investment.model';
 import { FinanceStore } from '../../../../services/finance.store';
 
 @Component({
@@ -30,9 +31,9 @@ export class TransferDialog {
     ...this.store.accounts().map(account => ({ key: `ORDINARY:${account.id}`,
       reference: { kind: 'ORDINARY', id: account.id } as AccountReference,
       label: `${account.name} · ${account.currency}`, currency: account.currency })),
-    ...this.store.investments().filter(account => account.status !== 'SETTLED').map(account => ({ key: `INVESTMENT:${account.id}`,
-      reference: { kind: 'INVESTMENT', id: account.id } as AccountReference,
-      label: `${account.name} · lokata · ${account.currency}`, currency: account.currency }))
+    ...this.store.investments().filter(account => account.type !== 'DEPOSIT' || (account.status !== 'SETTLED' && account.status !== 'DRAFT')).map(account => ({ key: `${investmentAccountKind(account.type)}:${account.id}`,
+      reference: { kind: investmentAccountKind(account.type), id: account.id } as AccountReference,
+      label: `${account.name} · ${investmentTypeLabel(account.type)} · ${account.currency}`, currency: account.currency }))
   ]);
   protected readonly form = this.fb.group({
     source: this.fb.control<string | null>(null, Validators.required),
@@ -41,11 +42,12 @@ export class TransferDialog {
     date: this.fb.control<Date | null>(new Date(), Validators.required)
   });
 
-  open(source: AccountReference | null = null, amount: number | null = null): void {
+  open(source: AccountReference | null = null, amount: number | null = null, destination: AccountReference | null = null): void {
     if (this.store.saving()) return;
     this.store.ensureOverviewLoaded();
     this.requestId = crypto.randomUUID();
-    this.form.reset({ source: source ? `${source.kind}:${source.id}` : null, destination: null, amount, date: new Date() });
+    this.form.reset({ source: source ? `${source.kind}:${source.id}` : null,
+      destination: destination ? `${destination.kind}:${destination.id}` : null, amount, date: new Date() });
     this.error.set(null);
     this.visible.set(true);
   }

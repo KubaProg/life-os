@@ -14,7 +14,7 @@ public class InvestmentValuation {
     private Long id;
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "investment_account_id", nullable = false)
-    private InvestmentAccount investment;
+    private DepositAccount investment;
     @Column(name = "valuation_date", nullable = false)
     private LocalDate valuationDate;
     @Column(name = "gross_profit", nullable = false, precision = 19, scale = 4)
@@ -31,7 +31,7 @@ public class InvestmentValuation {
     private Instant calculatedAt;
 
     protected InvestmentValuation() {}
-    public InvestmentValuation(InvestmentAccount investment, LocalDate date, DepositCalculator.Value value) {
+    public InvestmentValuation(DepositAccount investment, LocalDate date, DepositCalculator.Value value) {
         this.investment = investment; this.valuationDate = date; this.grossProfit = value.grossProfit();
         this.estimatedTax = value.estimatedTax(); this.netProfit = value.netProfit();
         this.currentValue = value.currentValue(); this.source = investment.getDepositTerms().getCalculationRule();

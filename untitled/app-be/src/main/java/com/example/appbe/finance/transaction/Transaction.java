@@ -40,6 +40,10 @@ public class Transaction {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "financial_account_id")
     private FinancialAccount financialAccount;
+    @Column(name = "deleted_account_id")
+    private Long deletedAccountId;
+    @Column(name = "deleted_account_name", length = 255)
+    private String deletedAccountName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
@@ -115,6 +119,17 @@ public class Transaction {
 
     public FinancialAccount getFinancialAccount() {
         return financialAccount;
+    }
+
+    public Long accountId() { return financialAccount == null ? deletedAccountId : financialAccount.getId(); }
+    public String accountName() { return financialAccount == null ? (deletedAccountName == null ? "Usunięte konto" : deletedAccountName + " (usunięte konto)") : financialAccount.getName(); }
+    public boolean isAccountDeleted() { return financialAccount == null; }
+    public void detachAccount() {
+        if (financialAccount != null) {
+            deletedAccountId = financialAccount.getId();
+            deletedAccountName = financialAccount.getName();
+            financialAccount = null;
+        }
     }
 
     public void setFinancialAccount(FinancialAccount financialAccount) {

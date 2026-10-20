@@ -34,6 +34,7 @@ export class TransferHistory {
   readonly transfers = input<ReadonlyArray<TransferDto>>([]);
   readonly idPrefix = input.required<string>();
   protected route(reference: AccountReference): Array<string | number> {
-    return [reference.kind === 'ORDINARY' ? '/finanse/konta' : '/finanse/inwestycje', reference.id];
+    const paths = { ORDINARY: '/finanse/konta', DEPOSIT: '/finanse/lokaty', BOND: '/finanse/obligacje', BROKERAGE: '/finanse/rachunki-maklerskie' };
+    return [paths[reference.kind], reference.id];
   }
 }

@@ -8,10 +8,17 @@
 - Nie zakładaj kursora, hovera ani dużego ekranu. Interfejs musi działać dotykowo w Android WebView.
 - Zapewniaj czytelną hierarchię na małym ekranie, pojedynczą kolumnę tam, gdzie to potrzebne, oraz wygodne strefy dotyku (co najmniej 44 × 44 px dla aktywnych kontrolek).
 - Nie ukrywaj istotnych akcji wyłącznie pod hoverem. Zachowuj dostępność z klawiatury i semantyczny HTML.
-- Przy zmianach UI sprawdzaj responsywność przynajmniej dla 320 px, 480 px i desktopu. Dla istotnych przepływów mobilnych uwzględniaj również Android WebView.
+- Przy zmianach UI projektuj responsywność dla 320 px, 480 px i desktopu oraz uwzględniaj Android WebView. Domyślnie oceniaj ją przez przegląd kodu; nie uruchamiaj weryfikacji w przeglądarce ani WebView bez wyraźnego polecenia użytkownika.
 - Konfiguracja Capacitor znajduje się w `app-fe/capacitor.config.ts`, a natywny projekt w `app-fe/android`.
 - Nigdy nie uruchamiaj automatycznie `cap sync`, `npx cap sync android`, `npm run android:sync`, `cap run`, `npm run android:run`, `cap open` ani `npx cap add android`. Synchronizację, uruchamianie i obsługę natywnego projektu Android wykonuje wyłącznie użytkownik ręcznie.
-- Po zmianach frontendu można poinformować użytkownika, że powinien samodzielnie wykonać synchronizację Androida, ale weryfikację wykonywaną przez agenta kończ na `npm run build`.
+- Po zmianach frontendu można poinformować użytkownika, że powinien samodzielnie wykonać synchronizację Androida. Nie uruchamiaj automatycznie `npm run build` ani innych poleceń budowania.
+
+## Domyślna weryfikacja zmian
+
+- Domyślnie pisz kod i sprawdzaj jego poprawność przez przegląd źródeł: składnię, typy, importy, kontrakty i aktualność referencji.
+- Nie uruchamiaj buildów, kompilacji, testów, serwerów podglądu ani aplikacji w celu weryfikacji bez wyraźnego polecenia użytkownika.
+- Nie korzystaj z przeglądarki, screenshotów ani automatyzacji UI do sprawdzania zmian bez wyraźnego polecenia użytkownika.
+- Nie proś rutynowo o zgodę na te czynności. Domyślnym zakończeniem zadania jest gotowy kod po przeglądzie źródeł.
 
 ## PrimeNG
 

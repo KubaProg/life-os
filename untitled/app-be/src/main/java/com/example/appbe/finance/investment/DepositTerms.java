@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/** Embedded in investment_accounts; not a separate table or entity. */
+/** Embedded in deposit_accounts; not a separate table or entity. */
 @Embeddable
 public class DepositTerms {
     @Column(name = "annual_rate", precision = 9, scale = 4)

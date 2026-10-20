@@ -8,14 +8,15 @@ public class TransactionMapper {
     public TransactionDto toDto(Transaction transaction) {
         return new TransactionDto(
                 transaction.getId(),
-                transaction.getFinancialAccount().getId(),
-                transaction.getFinancialAccount().getName(),
+                transaction.accountId(),
+                transaction.accountName(),
                 transaction.getType(),
                 transaction.getAmount(),
                 transaction.getCurrency(),
                 transaction.getTransactionDate(),
                 transaction.getCategory(),
-                transaction.getDescription()
+                transaction.getDescription(),
+                transaction.isAccountDeleted()
         );
     }
 }

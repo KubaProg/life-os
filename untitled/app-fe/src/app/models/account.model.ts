@@ -23,14 +23,29 @@ export interface AccountRequest {
   name: string;
   type: OrdinaryAccountType;
   currency: string;
-  openingBalance: number;
-  balanceStartDate: string;
+  openingBalance?: number;
+  balanceStartDate?: string;
 }
 
 export interface UpdateAccountRequest {
   name?: string;
   type?: OrdinaryAccountType;
   currency?: string;
+}
+
+export interface OpeningBalanceRequest {
+  openingBalance: number;
+  balanceStartDate: string;
+}
+
+export interface AccountDeletedResponse {
+  deletedAccountId: number;
+  overview: import('./finance-overview.model').FinanceOverviewDto;
+}
+
+export interface DeleteAccountRequest {
+  destinationAccountId?: number;
+  expectedBalance: number;
 }
 
 export interface AccountDetailsDto {

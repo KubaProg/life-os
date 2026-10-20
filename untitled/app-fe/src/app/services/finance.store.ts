@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { finalize, Observable, tap } from 'rxjs';
+import { catchError, finalize, Observable, of, switchMap, map, tap } from 'rxjs';
 
 import {
   FinanceOverviewDto,
@@ -8,8 +8,10 @@ import {
   TransactionDeletedResponse
 } from '../models/finance-overview.model';
 import { TransactionRequest } from '../models/transaction.model';
-import { TransferRequest, TransferResponse } from '../models/transfer.model';
-import { DepositRequest, InvestmentMutationResponse } from '../models/investment.model';
+import { AccountReference, TransferRequest, TransferResponse } from '../models/transfer.model';
+import { DepositRequest, InvestmentAccountRequest, InvestmentMutationResponse } from '../models/investment.model';
+import { AccountDeletedResponse, AccountDto, AccountRequest, DeleteAccountRequest, OpeningBalanceRequest } from '../models/account.model';
+import { AccountApiService } from './account-api.service';
 import { InvestmentApiService } from './investment-api.service';
 import { FinanceApiService } from './finance-api.service';
 
@@ -17,6 +19,7 @@ import { FinanceApiService } from './finance-api.service';
 export class FinanceStore {
   private readonly financeApi = inject(FinanceApiService);
   private readonly investmentApi = inject(InvestmentApiService);
+  private readonly accountApi = inject(AccountApiService);
 
   private readonly overviewState = signal<FinanceOverviewDto | null>(null);
   private readonly loadingState = signal(false);
@@ -115,6 +118,56 @@ export class FinanceStore {
   createDeposit(request: DepositRequest): Observable<InvestmentMutationResponse> {
     this.savingState.set(true);
     return this.investmentApi.createDeposit(request, this.summaryMonthState()).pipe(
+      tap(response => this.applyMutationSnapshot(response.overview)),
+      finalize(() => this.savingState.set(false))
+    );
+  }
+
+  createAccount(request: AccountRequest): Observable<number> {
+    return this.mutateOrdinaryAccount(this.accountApi.createAccount(request)).pipe(map(account => account.id));
+  }
+
+  deleteAccount(id: number, kind: AccountReference['kind'], body: DeleteAccountRequest): Observable<AccountDeletedResponse> {
+    this.savingState.set(true);
+    const request = kind !== 'ORDINARY'
+      ? this.investmentApi.deleteAccount(id, body, this.summaryMonthState())
+      : this.accountApi.deleteAccount(id, body, this.summaryMonthState());
+    return request.pipe(
+      tap(response => this.applyMutationSnapshot(response.overview)),
+      finalize(() => this.savingState.set(false))
+    );
+  }
+
+  configureOpeningBalance(id: number, request: OpeningBalanceRequest): Observable<AccountDto> {
+    return this.mutateOrdinaryAccount(this.accountApi.configureOpeningBalance(id, request));
+  }
+
+  private mutateOrdinaryAccount(mutation: Observable<AccountDto>): Observable<AccountDto> {
+    this.savingState.set(true);
+    return mutation.pipe(
+      // Invalidate older reads as soon as the account exists, including if the refresh fails.
+      tap(() => this.snapshotVersion++),
+      switchMap(account => this.financeApi.getOverview(this.summaryMonthState()).pipe(
+        tap(overview => this.applyMutationSnapshot(overview)),
+        map(() => account),
+        // Creation succeeded: still open its details if the overview refresh is unavailable.
+        catchError(() => { this.overviewState.set(null); this.loadErrorState.set(true); return of(account); })
+      )),
+      finalize(() => this.savingState.set(false))
+    );
+  }
+
+  createInvestmentAccount(request: InvestmentAccountRequest): Observable<InvestmentMutationResponse> {
+    this.savingState.set(true);
+    return this.investmentApi.createAccount(request, this.summaryMonthState()).pipe(
+      tap(response => this.applyMutationSnapshot(response.overview)),
+      finalize(() => this.savingState.set(false))
+    );
+  }
+
+  configureDeposit(id: number, request: DepositRequest): Observable<InvestmentMutationResponse> {
+    this.savingState.set(true);
+    return this.investmentApi.configureDeposit(id, request, this.summaryMonthState()).pipe(
       tap(response => this.applyMutationSnapshot(response.overview)),
       finalize(() => this.savingState.set(false))
     );
