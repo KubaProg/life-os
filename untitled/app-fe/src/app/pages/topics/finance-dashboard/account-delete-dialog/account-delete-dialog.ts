@@ -13,7 +13,7 @@ import { AccountReference } from '../../../../models/transfer.model';
 
 type DeletableAccount = {
   id: number; name: string; kind: AccountReference['kind'];
-  balance: number; currency: string; withdrawable?: boolean;
+  balance: number; currency: string;
 };
 
 @Component({
@@ -34,7 +34,7 @@ export class AccountDeleteDialog {
     .map(account => ({ id: account.id, label: `${account.name} · ${account.currency}` })));
   protected readonly canDelete = computed(() => {
     const account = this.selectedAccount();
-    return !!account && account.balance >= 0 && account.withdrawable !== false
+    return !!account && account.balance >= 0
       && (account.balance === 0 || this.destinations().some(destination => destination.id === this.destinationId()));
   });
 

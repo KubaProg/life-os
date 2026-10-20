@@ -7,7 +7,7 @@
       <header><p class="eyebrow">{{ typeLabel(data.investment.type) }} · {{ data.investment.currency }}</p><h1>{{ data.investment.name }}</h1>
         <p>{{ statusLabel(data.investment.status) }}</p></header>
       <p-button label="Usuń konto" severity="danger" [outlined]="true" [disabled]="store.saving()"
-        (onClick)="accountDeleteDialog.open({ id: data.investment.id, name: data.investment.name, kind: 'DEPOSIT', balance: data.investment.currentValue, currency: data.investment.currency, withdrawable: data.investment.status !== 'ACTIVE' })" />
+        (onClick)="accountDeleteDialog.open({ id: data.investment.id, name: data.investment.name, kind: 'DEPOSIT', balance: data.investment.deletionRefund, currency: data.investment.currency })" />
       @if (success()) { <p-message severity="success" [text]="success()!" /> }
       @if (data.investment.status === 'DRAFT') {
         <section class="panel" aria-labelledby="setup-title">

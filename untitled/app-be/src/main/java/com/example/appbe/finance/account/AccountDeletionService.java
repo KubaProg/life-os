@@ -55,7 +55,7 @@ public class AccountDeletionService {
         FinancialAccount financial = expectedKind == AccountKind.ORDINARY ? financialAccounts.findById(id).orElseThrow() : null;
         DepositAccount investment = expectedKind == AccountKind.DEPOSIT ? deposits.getOwned(id) : null;
         BigDecimal balance = financial != null ? balances.calculateCurrentBalance(financial)
-                : investments.details(id).investment().currentValue();
+                : investment != null ? investment.getRefundablePrincipal() : investments.details(id).investment().currentValue();
         if (balance.compareTo(request.expectedBalance()) != 0) {
             throw new InvestmentException(HttpStatus.CONFLICT, "ACCOUNT_BALANCE_CHANGED", "Saldo uległo zmianie. Odśwież szczegóły konta i ponów usuwanie.");
         }
@@ -71,9 +71,13 @@ public class AccountDeletionService {
             if (!destination.getCurrency().equals(account.getCurrency())) {
                 throw new InvestmentException("TRANSFER_CURRENCY_MISMATCH", "Konto docelowe musi mieć tę samą walutę.");
             }
-            // Reuse the existing transfer policies, including the maturity requirement for deposits.
-            transfers.transfer(new TransferRequest(UUID.randomUUID(), id, destination.getId(), balance,
-                    LocalDate.now(ZoneId.of("Europe/Warsaw"))), month);
+            TransferRequest refund = new TransferRequest(UUID.randomUUID(), id, destination.getId(), balance,
+                    LocalDate.now(ZoneId.of("Europe/Warsaw")));
+            if (investment != null) {
+                transfers.returnDepositPrincipal(refund, month);
+            } else {
+                transfers.transfer(refund, month);
+            }
         }
 
         // Detach historical references before deleting either account row. Keep their readable snapshots.

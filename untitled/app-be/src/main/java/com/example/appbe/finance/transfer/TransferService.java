@@ -39,6 +39,16 @@ public class TransferService {
 
     @Transactional
     public TransferResponse transfer(TransferRequest request, YearMonth month) {
+        return executeTransfer(request, month, false);
+    }
+
+    /** Cancellation returns only funded principal, forfeiting all unpaid interest. */
+    @Transactional
+    public TransferResponse returnDepositPrincipal(TransferRequest request, YearMonth month) {
+        return executeTransfer(request, month, true);
+    }
+
+    private TransferResponse executeTransfer(TransferRequest request, YearMonth month, boolean cancelDeposit) {
         User user = investments.lockOwner();
         MoneyTransfer existing = transfers.findByRequestIdAndUserId(request.requestId().toString(), 1L).orElse(null);
         if (existing != null) {
@@ -58,6 +68,9 @@ public class TransferService {
         TransferSide destination = resolve(request.destinationAccountId(), request.date());
         DepositAccount sourceInvestment = source.investment();
         DepositAccount destinationInvestment = destination.investment();
+        if (cancelDeposit && (sourceInvestment == null || destination.account().getKind() != AccountKind.ORDINARY)) {
+            throw new InvestmentException("INVALID_DEPOSIT_CANCELLATION", "Zwrot kapitału wymaga lokaty i zwykłego konta docelowego.");
+        }
         if (!source.account().getCurrency().equals(destination.account().getCurrency())) {
             throw new InvestmentException("TRANSFER_CURRENCY_MISMATCH", "Transfer wymaga tej samej waluty po obu stronach.");
         }
@@ -81,11 +94,15 @@ public class TransferService {
         if (sourceInvestment != null) {
             requireDeposit(sourceInvestment);
             if (sourceInvestment.getFundedOn() == null || sourceInvestment.getSettledOn() != null ||
-                    request.date().isBefore(sourceInvestment.getDepositTerms().getMaturityDate())) {
+                    (!cancelDeposit && request.date().isBefore(sourceInvestment.getDepositTerms().getMaturityDate()))) {
                 throw new InvestmentException("DEPOSIT_NOT_WITHDRAWABLE", "Wypłata wymaga sfinansowanej, nierozliczonej lokaty po terminie zakończenia.");
             }
-            payout = DepositCalculator.calculate(sourceInvestment, request.date());
-            if (request.amount().compareTo(payout.currentValue()) != 0) {
+            payout = cancelDeposit ? null : DepositCalculator.calculate(sourceInvestment, request.date());
+            BigDecimal expectedAmount = cancelDeposit ? sourceInvestment.getRefundablePrincipal() : payout.currentValue();
+            if (request.amount().compareTo(expectedAmount) != 0) {
+                if (cancelDeposit) {
+                    throw new InvestmentException("INVALID_DEPOSIT_REFUND", "Przy usuwaniu lokaty zwracany jest wyłącznie cały kapitał, bez odsetek.");
+                }
                 throw new InvestmentException("INVALID_DEPOSIT_WITHDRAWAL", "Lokata jest rozliczana w całości: kapitał plus odsetki po podatku według konfiguracji.");
             }
         }
@@ -96,8 +113,11 @@ public class TransferService {
         }
         if (sourceInvestment != null) {
             sourceInvestment.settle(request.date());
-            operations.save(new InvestmentOperation(sourceInvestment, transfer, "PRINCIPAL_RETURN", request.date(), sourceInvestment.getPrincipal()));
-            operations.save(new InvestmentOperation(sourceInvestment, transfer, "INTEREST_PAYOUT", request.date(), payout.netProfit()));
+            operations.save(new InvestmentOperation(sourceInvestment, transfer,
+                    cancelDeposit ? "DEPOSIT_CANCELLATION" : "PRINCIPAL_RETURN", request.date(), sourceInvestment.getPrincipal()));
+            if (!cancelDeposit) {
+                operations.save(new InvestmentOperation(sourceInvestment, transfer, "INTEREST_PAYOUT", request.date(), payout.netProfit()));
+            }
         }
         investmentAccounts.flush();
         operations.flush();

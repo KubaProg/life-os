@@ -8,6 +8,7 @@ export interface InvestmentDto {
   currency: string;
   principal: number;
   currentValue: number;
+  deletionRefund: number;
   grossProfit: number;
   estimatedTax: number;
   netProfit: number;
@@ -38,7 +39,7 @@ export interface DepositRequest {
 export interface InvestmentOperationDto {
   id: number;
   transferId: number;
-  type: 'FUNDING' | 'PRINCIPAL_RETURN' | 'INTEREST_PAYOUT';
+  type: 'FUNDING' | 'PRINCIPAL_RETURN' | 'INTEREST_PAYOUT' | 'DEPOSIT_CANCELLATION';
   date: string;
   currency: string;
   amount: number;
@@ -72,5 +73,6 @@ export const investmentRoute = (type: InvestmentType): string => ({
 export const investmentAccountKind = (type: InvestmentType): 'DEPOSIT' | 'BOND' | 'BROKERAGE' =>
   type === 'DEPOSIT' ? 'DEPOSIT' : type === 'BOND' ? 'BOND' : 'BROKERAGE';
 export const investmentOperationLabel = (type: InvestmentOperationDto['type']): string => ({
-  FUNDING: 'Założenie lokaty', PRINCIPAL_RETURN: 'Zwrot kapitału', INTEREST_PAYOUT: 'Wypłata odsetek'
+  FUNDING: 'Założenie lokaty', PRINCIPAL_RETURN: 'Zwrot kapitału', INTEREST_PAYOUT: 'Wypłata odsetek',
+  DEPOSIT_CANCELLATION: 'Zerwanie lokaty — zwrot kapitału bez odsetek'
 })[type];

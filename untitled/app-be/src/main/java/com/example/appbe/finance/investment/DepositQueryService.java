@@ -115,7 +115,7 @@ public class DepositQueryService {
                 value == null ? zero : value.getNetProfit(), terms == null ? null : terms.getAnnualRate(), terms == null ? null : terms.getTaxRate(),
                 terms == null ? null : terms.getCalculationRule(), terms == null ? null : terms.getCapitalization(),
                 terms == null ? null : terms.getStartDate(), terms == null ? null : terms.getMaturityDate(),
-                value == null ? today : value.getValuationDate(), status);
+                value == null ? today : value.getValuationDate(), status, account.getRefundablePrincipal());
     }
 
     private List<MoneyTotalDto> moneyTotals(Map<String, BigDecimal> values) {

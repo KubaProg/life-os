@@ -39,6 +39,9 @@ public class DepositAccount {
     public String getName() { return account.getName(); }
     public String getCurrency() { return account.getCurrency(); }
     public BigDecimal getPrincipal() { return principal; }
+    public BigDecimal getRefundablePrincipal() {
+        return fundedOn == null || settledOn != null ? BigDecimal.ZERO : principal;
+    }
     public DepositTerms getDepositTerms() { return depositTerms; }
     public void configureDeposit(BigDecimal principal, DepositTerms terms) {
         this.principal = principal;
