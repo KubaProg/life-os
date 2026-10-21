@@ -15,6 +15,16 @@ Po zakończeniu tego etapu aplikacja ma odpowiadać na cztery podstawowe pytania
 
 Cele finansowe, projekcje i scenariusze pozostają następnymi obszarami szerszego MVP po inwestycjach. AI i integracje bankowe są poza obecnym zakresem. Pozyskiwanie cen rynkowych jest rozpoznawane jako część przyszłego pakietu inwestycji; dostawca nie został jeszcze wybrany.
 
+### Aktualny kierunek obligacji — aktualizacja 2026-10-21
+
+Ta aktualizacja i sekcja [Obligacje detaliczne: model, rozliczenia i źródła danych](#obligacje-detaliczne-model-rozliczenia-i-źródła-danych--2026-10-21) zastępują sprzeczne, wcześniejsze ustalenia dotyczące wspólnego `InvestmentAccount`, zakupu przy tworzeniu konta i konfiguracji produktu przez użytkownika. Starsze sekcje z datami zachowujemy jako historię decyzji.
+
+- W kodzie wspólny `Account` ma osobne profile: `FinancialAccount`, `DepositAccount`, `BondAccount` i `BrokerageAccount`. `InvestmentAccount` został zastąpiony; migracja V8 rozdziela dotychczasowe profile i zachowuje identyfikatory. To opis źródeł, nie potwierdzenie wykonania migracji ani działania aplikacji.
+- Konto obligacyjne powstaje bez kwoty. Dopłaty trafiają na jego saldo gotówki; zakup obligacji jest osobną operacją na tym koncie.
+- MVP nie wymaga panelu samodzielnego ustalania reguł obligacji. Reguły pochodzą z warunków emisji państwowych; panel utrzymania katalogu oraz integracja Finwire są odłożone.
+- Zaimplementowano źródła pierwszego produktu TOS1029 (4,40%): modele `BondIssue`, `Bond`, `BondOperation`, zakup, częściowy wykup i automatyczne rozliczenia. Szczegóły aktualnego zakresu są poniżej; wcześniejsze propozycje pozostają historią projektu.
+- Weryfikacja agentem pozostaje przeglądem źródeł, bez buildów, testów, uruchamiania aplikacji, przeglądarki ani Mavena.
+
 ### Priorytet MVP — aktualizacja 2026-10-19
 
 Miesięczne podsumowanie jest wdrożone. Inwestycje mają roboczy szkic backendu do przeglądu, bez potwierdzenia kompilacji i działania; obowiązuje kolejność prac uzgodniona 2026-10-19. Cashflow nie jest prezentowany w UI. Nie ma osobnej karty dziennego balansu.
@@ -360,6 +370,99 @@ Trwała historia naliczeń i wycen jest wymagana do raportowania zysków za popr
 - Dzienne snapshoty mogą stanowić historię wycen lub przyspieszać odczyt. Osobna tabela miesięcznych podsumowań jest opcjonalną optymalizacją, nie jedynym źródłem prawdy. Dla ETF brak historycznej ceny oznacza brak/niepełność danych, a nie wynik zero.
 - Zysk inwestycyjny prezentujemy oddzielnie od przychodów z transakcji. Niezrealizowanej wyceny nie dopisujemy automatycznie do `INCOME` ani do stopy oszczędzania. Uznanie wypłaconego dochodu i podatków wymaga reguł produktu, bez podwójnego liczenia.
 
+#### Obligacje detaliczne: model, rozliczenia i źródła danych — 2026-10-21
+
+##### Zaimplementowany zakres TOS1029 — 2026-10-21
+
+Opis źródeł po wdrożeniu; migracji i aplikacji nie uruchamiano. Ta podsekcja zastępuje określenie poniższych elementów jako wyłącznie proponowanych.
+
+- V9 dodaje `bond_issues`, `bonds`, `bond_operations` i katalog jednej konkretnej emisji TOS1029. Zachowuje konta i transfery z V8. Emisji nie przedłużamy automatycznie na kolejne miesiące: dla nowej oferty trzeba dodać osobną emisję z jej warunkami. Panel katalogu i Finwire nadal są odłożone.
+- Parametry emisji: sprzedaż 1–31.10.2026, PLN, 100 zł za sztukę, stałe 4,40% rocznie, trzy lata od zakupu, roczna kapitalizacja i odsetki płatne przy wykupie. Wartość jednej sztuki po trzech latach przed podatkiem: 113,79 zł.
+- Jedna partia `Bond` reprezentuje jeden zakup. Zachowuje oryginalną liczbę sztuk, pozostałą liczbę i sztuki zarezerwowane do wykupu. Kapitał i bieżący zysk w UI dotyczą wyłącznie pozostałych sztuk. Po rozliczeniu 5 z 23 sztuk kapitał zmienia się z 2300 na 1800 zł; wypłacony zysk jest osobną pozycją historii i podsumowania.
+- `BondCalculator` liczy wartość jednej sztuki wg załączników do listu emisyjnego, z ACT/ACT rocznego okresu odsetkowego. `Bond` przechowuje ostatni roczny stan kapitalizacji. Wycena bieżąca nie odtwarza codziennych zdarzeń od zakupu; historyczne miesięczne wyniki korzystają z trwałych operacji. Historycznych kwot wypłaty nie zastępujemy nowymi wyliczeniami.
+- Podatek zwykłego rachunku: 19% od odsetek po pomniejszeniu o opłatę; kapitał nie jest opodatkowany. W MVP podstawą jest łączna wypłata odsetek w jednej operacji partii; podatek zaokrąglamy w górę do grosza. Wycena bieżąca pokazuje szacowany podatek, bez opłaty za hipotetyczny wcześniejszy wykup. Kapitalizacja nie wypłaca gotówki i nie pobiera podatku.
+- Wcześniejszy wykup: dowolna dostępna liczba sztuk, po siedmiu dniach od zakupu, najpóźniej 20 dni przed zapadalnością. Opłata do 1 zł/szt., ograniczona narosłymi odsetkami. Dyspozycja rezerwuje sztuki i jest nieodwołalna. Uwzględniamy pięć kolejnych dni roboczych naliczania i wypłatę po ich upływie (następny dzień roboczy), zgodnie z pkt 24 i przykładem operatora; stosowany w kalkulatorze koniec naliczania jest wyłączny. Gotówka pojawia się dopiero w dniu rozliczenia. Przed rozliczeniem zarezerwowane sztuki nadal należą do portfela.
+- Zapadalność: odsetki kończą się w terminie umownym. Jeżeli wypłata przypada w sobotę lub święto, gotówka trafia na konto w pierwszym kolejnym dniu roboczym. Kalendarz obejmuje polskie święta stałe i ruchome, w tym Wigilię od 2025 r.
+- Zakup można zarejestrować z datą historyczną wewnątrz okresu sprzedaży emisji, jeśli saldo gotówki było wystarczające wtedy i po późniejszych zapisanych operacjach. Nowe dyspozycje wcześniejszego wykupu mają dzisiejszą datę. Oba formularze domyślnie wybierają dzisiaj, konto jest ustalone przez otwarty ekran.
+- `BondAccountService` agreguje gotówkę i wartość papierów; `BondService` odpowiada za zakup, dyspozycje i rozliczenie; `BondCalculator` za matematykę. Ledger gotówki obejmuje transfery oraz wyłącznie rozliczone operacje obligacji. Zakup i wykup nie są sztucznymi transferami ani transakcjami wydatku/przychodu. Miesięczny cashflow dostaje tylko wypłacone odsetki netto.
+- Rozliczenia uruchamia Spring `@Scheduled` co godzinę, pięć minut po pełnej godzinie, w strefie Europe/Warsaw; także start backendu i odczyt/operacja zależna od salda. Blokada lokalnego użytkownika i unikalne klucze zdarzeń/żądań chronią przed powtórnym zakupem lub zaksięgowaniem wypłaty. Po wyłączeniu aplikacji terminy zostają w bazie i są nadrabiane po uruchomieniu. W UI dodano odświeżanie salda i rozliczeń.
+- Konto z otwartymi albo oczekującymi na wykup obligacjami nie może być usunięte. Po całkowitym wykupie można przenieść gotówkę i usunąć konto; partie i ich operacje pozostają w bazie z oryginalnym identyfikatorem i nazwą konta.
+- To ewidencja w Life OS. Zakup, dyspozycja i wypłata nie wysyłają zleceń do banku. IKE/IKZE, zamiana, rynek wtórny, kolejne typy i integracja brokerska są poza tym zakresem.
+
+Źródła reguł użyte w implementacji:
+
+- [List emisyjny nr 97/2026 — TOS1029, załączniki 1 i 2](https://www.obligacjeskarbowe.pl/media_files/c15a26ae-de6e-4b89-a137-cb16687a7b0a.pdf).
+- [Karta TOS1029 i przykład terminów wcześniejszego wykupu](https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-3-letnie-tos/tos1029/).
+- [Informator obligacyjny — podatek 19%](https://www.obligacjeskarbowe.pl/informator-obligacyjny/).
+- [MF — zaokrąglanie podatku do groszy w górę, art. 63 § 1a](https://www.podatki.gov.pl/media/10514/broszura-do-pit-39-za-2024-r.pdf).
+- [MRPiPS — Wigilia wolna od 2025 r.](https://www.gov.pl/web/rodzina/wolna-wigilia-od-przyszlego-roku).
+
+##### Wcześniejszy projekt modelu i dalszy rozwój
+
+**Zakres tej aktualizacji:** zapis decyzji o odłożeniu panelu oraz researchu Finwire; propozycja modelu i rozliczeń. Nie dodajemy teraz encji, migracji, kalkulatora, biblioteki schedulerów ani zadań działających w tle.
+
+##### Proponowany model bez dziedziczenia encji
+
+Nie tworzyć oddzielnych encji `TosBond`, `CoiBond`, `EdoBond` wyłącznie z powodu innego oprocentowania. Jeden model zakupionej partii `Bond` oraz typ `BondType` powinny wystarczyć. Rozdzielić wspólne warunki emisji od faktu posiadania obligacji:
+
+| Element | Odpowiedzialność i przykładowe dane |
+| --- | --- |
+| `BondAccount` | Rachunek rejestrowy: wspólny `Account`, dostępna gotówka, posiadane partie. Dopłata nie jest zakupem. |
+| `BondIssue` | Konkretna emisja: kod serii, `BondType`, okres sprzedaży, nominał i waluta, długość oszczędzania, reguła oprocentowania, kapitalizacji, wypłat, opłat, podatku i zaokrągleń, źródło warunków oraz wersja reguł. Cena zakupu jest odrębna od nominału. |
+| `Bond` | Partia na `BondAccount`: referencja do emisji/niezmiennej wersji warunków, data zakupu, cena jednostkowa, liczba kupionych i pozostałych sztuk, termin zapadalności i status rozliczenia. Oddzielne zakupy tej samej emisji nie nadpisują wcześniejszej partii. |
+| `BondOperation` | Trwała historia zakupu, kapitalizacji, wypłaty odsetek, dyspozycji i realizacji wykupu. Zdarzenie rozdziela liczbę sztuk, kapitał, odsetki brutto, opłatę, podatek i faktyczny wpływ na gotówkę. |
+| Okresy odsetkowe — rozszerzenie | Dla przyszłych produktów zmiennoprocentowych: granice okresów, rzeczywiście obowiązujące stopy, wskaźniki i marże. Nie nadpisywać historii jedną bieżącą stopą. Nie wymagać tego rozszerzenia do pierwszej implementacji TOS. |
+
+Reguły rachunkowe mogą być dobierane przez `BondType` i wersję kalkulatora, bez dziedziczenia JPA. Nie projektować na zapas uniwersalnego silnika dowolnych instrumentów. Zakup zachowuje wersję warunków; aktualizacja nowej emisji nie zmienia wcześniejszych zakupów. Brak wymaganej stopy dla okresu oznacza niekompletne dane, a nie stopę zero.
+
+Formularz zakupu w kontekście otwartego konta: emisja, liczba sztuk, data zakupu (domyślnie dzisiaj); dane warunków prezentowane do odczytu. Konto jest przypięte do kontekstu. Koszt oraz dostępność gotówki weryfikuje backend. Pierwszy zakres: zwykły opodatkowany rachunek, bez IKE/IKZE, automatycznej zamiany i reinwestycji.
+
+##### Proponowany podział serwisów
+
+- `BondAccountService` pozostaje serwisem rachunku: utworzenie/odczyt, własność i saldo gotówki. Obecnie saldo pochodzi wyłącznie z transferów; dodanie zakupów i wykupów musi rozszerzyć jego obliczanie o operacje obligacyjne.
+- `BondService` obsługuje przypadki użycia: zakup, przedterminowy wykup, wykup w terminie oraz rozliczanie należnych operacji. Nazwy klas są propozycją; nie rozbudowywać automatycznie wszystkiego wewnątrz `BondAccountService`.
+- `BondCalculator` oblicza odsetki, kapitalizację, podatki, opłaty i daty zgodnie z obsługiwanym typem oraz wersją reguł emisji. Nie przechowuje salda rachunku.
+- `MoneyTransfer` nadal oznacza przepływ między dwoma rachunkami. Zakup i wykup w obrębie jednego rachunku są operacjami `BondOperation`, a nie transferem konta do siebie ani fikcyjną transakcją `INCOME`/`EXPENSE`.
+- Zakup atomowo zmniejsza dostępną gotówkę i zapisuje partię. Wykup atomowo zmniejsza pozostałą liczbę sztuk i uznaje gotówkę o należny kapitał oraz odsetki po podatku/opłatach. Nie księgować tych samych kwot drugi raz w osobnej tabeli salda.
+- Naliczony zysk, wypłacony dochód i zwrócony kapitał są odrębne. Do przychodów z inwestycji trafia wypłacony dochód, nie cała kwota wykupu; kapitalizacja nie powoduje dopisania gotówki.
+- Konto z otwartymi partiami nie może być usunięte przez sam zwrot jego gotówki. Najpierw rozliczyć posiadane obligacje według ich reguł, zachowując historię i rozdzielenie opłat/podatku.
+
+##### Wykup w terminie i przed terminem
+
+Dla rozważanego TOS oprocentowanie jest stałe, kapitalizacja roczna, a wykup następuje po trzech latach od zakupu. Sam kod emisji nie określa dnia wykupu konkretnej partii. Termin kontraktowy, data dyspozycji i data rozliczenia gotówki to różne pojęcia; kalendarz dni roboczych i zaokrąglenia ustalić na podstawie listu emisyjnego przed implementacją.
+
+Wykup w terminie ma zamknąć partię i uznać rachunek rejestrowy kapitałem oraz odsetkami netto. Przedterminowy wykup wymaga osobnej dyspozycji i reguł opłaty oraz terminów rozliczenia z konkretnej emisji. Nie kopiować zasady zerwania lokaty „zwrot kapitału i skasowanie wszystkich odsetek” do obligacji. Szczegóły podatkowe zwykłego rachunku, sposób zaokrąglenia na sztukę/partię i naliczanie odsetek muszą być jawne przed kodowaniem.
+
+Źródła: [TOS — opis produktu, kapitalizacji i wykupu](https://www.obligacjeskarbowe.pl/oferta-obligacji/obligacje-3-letnie-tos/tos1029/), [oficjalne listy emisyjne MF](https://www.gov.pl/web/finanse/biezaca-oferta2), [rozporządzenie — tekst jednolity z 2024 r.; punkt wyjścia do weryfikacji obowiązujących zasad](https://eli.gov.pl/api/acts/DU/2024/520/text.html). Nie traktować parametrów jednej emisji jako stałych dla wszystkich roczników.
+
+##### Scheduler — rekomendacja na MVP, do uzgodnienia przed wdrożeniem
+
+- Na obecny lokalny single-user proponujemy Spring `@Scheduled`, bez nowej biblioteki. Jeden okresowy proces wyszukuje należne, nierozliczone operacje z terminem `<= dzisiaj` w `Europe/Warsaw`; nie zakładać osobnego joba dla każdej sztuki obligacji.
+- Scheduler jest tylko wyzwalaczem `BondService`, nie miejscem reguł finansowych. Zasilenie gotówki musi wynikać z trwałego zdarzenia rozliczenia, nie z samego upływu daty w UI.
+- Ten sam mechanizm nadrabia zaległości przy starcie backendu i przed udostępnieniem aktualnego salda lub wykonaniem operacji zależnej od niego. Wyłączony backend nie wykonuje zadań; po powrocie przetwarza wszystkie należne zdarzenia z prawidłowymi datami finansowymi.
+- Obsłużyć restart i powtórzenia: transakcja na pojedyncze rozliczenie, blokada partii i unikalny klucz należnego zdarzenia (np. partia + typ zdarzenia + okres) oraz osobna idempotencja poleceń zakupu/wykupu. Równoległy scheduler i odczyt konta nie mogą wypłacić tych samych pieniędzy dwa razy.
+- W bazie zachować stan zakończenia oraz powiązanie księgowania ze zdarzeniem. Nie uznawać samej adnotacji ani biblioteki schedulerów za gwarancję jednokrotnego rozliczenia.
+- Quartz rozważyć później, gdy będą potrzebne trwałe indywidualne harmonogramy, zarządzanie triggerami lub wiele instancji. Spring Boot wspiera Quartz i magazyn JDBC; na dziś nie dodajemy zależności ani tabel Quartz. Sam Quartz również nie zastępuje idempotencji rozliczeń.
+
+Źródła: [Spring — Task Execution and Scheduling](https://docs.spring.io/spring-framework/reference/integration/scheduling.html), [Spring Boot — Quartz Scheduler i magazyn JDBC](https://docs.spring.io/spring-boot/reference/io/quartz.html).
+
+##### Finwire — źródło do przyszłego importu, nie bieżąca zależność MVP
+
+Zachowane na przyszłość, research dokumentacji 2026-10-21:
+
+- [Dokumentacja dostawcy](https://finwire.pl/dla-developerow), [OpenAPI](https://public-api.finwire.pl/openapi.json), [repozytorium dokumentacji](https://github.com/finwire-pl/api).
+- Baza: `https://public-api.finwire.pl`; endpoint `GET /v1/bonds` jest opisany jako oprocentowanie detalicznych obligacji skarbowych na podstawie danych MF.
+- Dostawca deklaruje publiczne REST/JSON bez klucza i rejestracji oraz licencję CC BY 4.0. Przed integracją potwierdzić aktualne warunki, wymagane wskazanie źródła i ograniczenia.
+- Potwierdzono obecność endpointu w dokumentacji/specyfikacji, nie kompletność jego odpowiedzi ani dostępność produkcyjną. Sprawdzić pokrycie konkretnych emisji, historii, marż, opłat i okresów odsetkowych; nie zakładać, że sam endpoint daje kompletny model rozliczeń.
+- Import przez backend do lokalnego, wersjonowanego katalogu, z datą pozyskania i źródłem. Nie pobierać stopy z internetu przy każdym naliczeniu ani nie nadpisywać warunków istniejących partii aktualną ofertą.
+- Oficjalne listy emisyjne i tabele odsetkowe pozostają źródłem weryfikacji. Integracja Finwire oraz automatyczne aktualizacje są przyszłym zakresem.
+
+##### Panel utrzymania emisji — odłożony punkt rozwoju
+
+- [ ] Później: panel dodawania/importu i korekty danych emisji, wskazujący oficjalne źródło oraz historię zmian. Służy utrzymaniu odwzorowania państwowych warunków, nie dowolnemu projektowaniu obligacji przez użytkownika.
+- [ ] Później: akceptacja danych z Finwire i obsługa niekompletnych danych historycznych.
+- Na MVP użytkownik wybiera emisję i wpisuje zakup, bez konfigurowania kapitalizacji, podatku, opłaty lub zasad oprocentowania. Obsługiwany typ i emisje dostarczamy jako dane zgodne z dokumentami źródłowymi; panel nie jest warunkiem pierwszego zakupu.
+
 #### Źródła wycen inwestycji — research 2026-10-13
 
 Sprawdzono dokumentację, bez klucza użytkownika i bez potwierdzenia uprawnień konkretnego planu. Integracja nie została wdrożona.
@@ -654,21 +757,22 @@ Kryterium tego pakietu: rzeczywiste podsumowanie transakcji i aktualizacja snaps
 
 Kryterium ukończenia: net worth wynika z kont, aktywów i zobowiązań, a każdą składową można otworzyć i zweryfikować.
 
-## Etap 5 — inwestycje, obligacje i lokaty — plan backendu
+## Etap 5 — inwestycje, obligacje i lokaty — aktualizacja 2026-10-21
 
-**Status:** w repo istnieje szkic modelu, migracji i serwisów. Nie jest to potwierdzona implementacja. W tej sesji uzgodniono poniższą kolejność; pełny opis i aktualny stan są w [Current-focus.md](../Current-focus.md).
+**Stan źródeł:** profile `DepositAccount`, `BondAccount` i `BrokerageAccount` zastąpiły wspólne `InvestmentAccount` (V8). V9 dodaje emisję TOS1029, partie i historię obligacji. Są formularze zakupu i częściowego wykupu, kalkulator, automatyczne rozliczenia i salda uwzględniające gotówkę oraz obligacje. Nie potwierdzamy tu wykonania migracji, buildów ani działania aplikacji.
 
-1. **Account + profile + migracje V4/V5.** Wspólne ID, właściciel, nazwa i waluta w `Account`; `FinancialAccount` i `InvestmentAccount` mają FK/PK do niego przez `@MapsId`. Profil inwestycyjny ma typ `DEPOSIT`/`BOND`/`ETF`/`OTHER`, wspólne pola i osadzone warunki lokaty. Bez stałego konta finansującego, osobnych encji ETF/obligacji i pozycji na zapas. Przejrzeć szkic V4 przed jego użyciem.
-2. **MoneyTransfer + wpływ na saldo.** Źródło i cel to dwie relacje do wspólnej tabeli `accounts`, niezależnie od rodziny profilu. Zapis atomowy, walidacja właściciela, waluty, daty i środków; bez powielania obciążenia przez Transaction. Najpierw zwykłe konta, następnie użycie przez produkt inwestycyjny. Ponowienie żądania nie tworzy drugiego transferu.
-3. **Serwis i operacje zakładania lokaty.** Od razu wymagana kwota i źródło pieniędzy. Utworzenie rachunku, pierwszy transfer oraz zapis operacji w jednej transakcji bazodanowej, z rollbackiem całości przy błędzie. Pierwsza lokata bez dopłat; dokładne reguły naliczania, kapitalizacji i podatku muszą być jawne.
-4. **Naliczenia i trwała historia.** Osobne operacje oraz historia wycen/naliczeń, uzupełnianie dni bez otwierania aplikacji, rozdzielenie kapitału, brutto, podatku i netto. Kapitalizacja/wypłata nie nalicza zysku drugi raz. Nowy miesiąc zmienia raport, a nie wartość kapitału.
-5. **Overview i miesięczny zysk.** Snapshot obejmuje zwykłe i inwestycyjne konta; backend liczy zysk dla wybranego miesiąca. Różne waluty pozostają osobno. Wypłacone odsetki odróżnia się od transferu kapitału i od niezrealizowanej wyceny.
-6. **Frontend — szkic przywrócony na prośbę użytkownika.** Formularze lokaty i transferu, wspólna lista, szczegóły lokaty oraz historia transferów są podłączone do aktualnego kontraktu. Użytkownik chce poklikać prototyp; finalny projekt i poprawki UX pozostają do uzgodnienia. Nie wykonywano buildu ani kontroli w przeglądarce.
-7. **Obligacje i ETF.** Pierwszy zakup przy tworzeniu, potem kolejne zakupy z różnych kont. Przy konkretnym produkcie ustalić jednostki, partie/pozycje, harmonogram i ceny, a dopiero wtedy rozszerzać model.
+1. Utrzymać wspólny `Account` z osobnymi profilami i wspólny `MoneyTransfer`. Tworzenie pustego konta i jego zasilenie są odrębne od zakupu papierów wartościowych.
+2. Zachować reguły lokaty: jedna wpłata, naliczenia i historia; przy usuwaniu zwrot samego kapitału, bez niewypłaconych odsetek. Nie przenosić tych reguł na obligacje.
+3. W źródłach: wspólny model partii `Bond`, emisja `BondIssue` i `BondOperation`, bez dziedziczenia encji per typ; pierwszy produkt TOS1029 4,40% według listu emisyjnego.
+4. W źródłach: zakup z dostępnej gotówki konta i trwała historia. Formularz nie wymaga konfiguracji warunków emisji przez użytkownika.
+5. W źródłach: naliczenia, podatek, opłata, częściowy i terminowy wykup do gotówki rachunku rejestrowego, z idempotencją i oddzieleniem kapitału od dochodu.
+6. W źródłach: Spring `@Scheduled` oraz nadrabianie po starcie/na odczycie. Quartz odłożony.
+7. W źródłach: overview obligacji i ich wynik, osobno gotówka, wartość papierów, naliczony zysk i wypłacony dochód.
+8. Panel utrzymania emisji, import Finwire, kolejne typy obligacji i zakupy ETF pozostają dalszym rozwojem.
 
-Kryterium domknięcia backendu pierwszego produktu: rachunek lokaty powstaje wraz z finansowaniem, saldo źródła spada dokładnie raz, kapitał nie trafia do wydatków, a miesięczny wynik jest możliwy do wyjaśnienia trwałą historią. Kryteria UI zostaną ustalone osobno.
+Szczegóły i źródła: [Obligacje detaliczne: model, rozliczenia i źródła danych](#obligacje-detaliczne-model-rozliczenia-i-źródła-danych--2026-10-21).
 
-Zakaz uruchamiania testów, Playwrighta, buildu, Mavena i poleceń Capacitor przez agenta pozostaje aktualny. Wymagania jakościowe dokumentu są backlogiem przyszłej weryfikacji, a nie stwierdzeniem jej wykonania.
+Zakaz uruchamiania testów, przeglądarki, buildów, Mavena i poleceń Capacitor przez agenta pozostaje aktualny. Wymagania jakościowe dokumentu są backlogiem przyszłej weryfikacji, a nie stwierdzeniem jej wykonania.
 
 Po podstawowych inwestycjach: cele finansowe oraz proste projekcje/scenariusze w osobnych planach.
 
@@ -794,6 +898,11 @@ utwórz konto
 18. `FIN-018` — **plan i roboczy szkic** — serwis pierwszej lokaty po domknięciu encji oraz transferów; potem obligacje i ETF.
 19. `FIN-019` — snapshoty i historia net worth.
 20. `FIN-020` — integracja z API kursów walut i agregacje w walucie bazowej — etap późniejszy.
+21. `FIN-021` — **zaimplementowane w źródłach, bez uruchomienia** — emisja `BondIssue`, partia `Bond` bez dziedziczenia encji i zakup za gotówkę konta; TOS1029 4,40%, migracja V9 i formularz.
+22. `FIN-022` — **zaimplementowane w źródłach, bez uruchomienia** — naliczenia, częściowy i terminowy wykup, podatki i idempotentne rozliczenia; scheduler Spring oraz nadrabianie zaległości.
+23. `FIN-023` — **odłożone** — panel utrzymania katalogu emisji; odwzorowanie warunków państwowych ze źródłem i wersjonowaniem.
+24. `FIN-024` — **odłożone** — rozpoznanie i import `GET https://public-api.finwire.pl/v1/bonds`; sprawdzenie pełności danych i aktualnych warunków API.
+
 
 Pierwszy milestone obejmuje wyłącznie `FIN-001`–`FIN-007`. Jego efektem jest mały, kompletny moduł zwykłych kont działający od MySQL przez Spring Boot do mobilnego UI. Transakcje i dashboard są osobnym kolejnym milestone'em.
 

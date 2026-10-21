@@ -22,6 +22,7 @@ import { TransactionHistoryFilters } from '../transaction-history-filters/transa
 import { TransactionDialog } from '../transaction-dialog/transaction-dialog';
 import { accountTypeColor, accountTypeLabel } from '../account-display';
 import { AccountDeleteDialog } from '../account-delete-dialog/account-delete-dialog';
+import { todayDate } from '../../../../utils/date';
 
 type AccountLoadState = 'loading' | 'ready' | 'not-found' | 'error';
 
@@ -54,7 +55,7 @@ export class AccountDetails {
   protected readonly balanceError = signal<string | null>(null);
   protected readonly balanceForm = this.fb.group({
     openingBalance: this.fb.control<number | null>(0, Validators.required),
-    balanceStartDate: this.fb.control<Date | null>(new Date(), Validators.required)
+    balanceStartDate: this.fb.control<Date | null>(todayDate(), Validators.required)
   });
 
   protected readonly financeStore = inject(FinanceStore);

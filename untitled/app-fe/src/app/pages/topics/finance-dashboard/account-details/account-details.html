@@ -22,8 +22,6 @@
           </div>
         </div>
       </header>
-      <p-button class="account-delete" label="Usuń konto" severity="danger" [outlined]="true" [disabled]="financeStore.saving()"
-        (onClick)="accountDeleteDialog.open({ id: selectedAccount.id, name: selectedAccount.name, kind: 'ORDINARY', balance: selectedAccount.currentBalance, currency: selectedAccount.currency })" />
 
       @if (successMessage()) {
         <p-message severity="success" [text]="successMessage()!" />
@@ -57,6 +55,12 @@
             <p class="eyebrow">Historia konta</p>
             <h2 id="transactions-title">Transakcje</h2>
           </div>
+          <p-button label="Dodaj transakcję" [disabled]="financeStore.saving()"
+            (onClick)="successMessage.set(null); transactionDialog.open(null, selectedAccount.id)">
+            <ng-template #icon>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14" /></svg>
+            </ng-template>
+          </p-button>
         </div>
         <app-transaction-history-filters
           #historyFilters
@@ -66,7 +70,7 @@
         @if (!transactions().length) {
           <div class="empty-transactions">
             <h3>Brak transakcji na tym koncie</h3>
-            <p>Nowe przychody i wydatki możesz dodać z głównego ekranu finansów.</p>
+            <p>Dodaj pierwszy przychód lub wydatek przyciskiem „Dodaj transakcję”.</p>
           </div>
         } @else if (!historyFilters.filteredTransactions().length) {
           <div class="empty-transactions" role="status">
@@ -91,7 +95,7 @@
                   {{ transaction.type === 'INCOME' ? '+' : '−' }}{{ transaction.amount | currency: transaction.currency : 'symbol' : '1.2-2' : 'pl-PL' }}
                 </strong>
               <div class="transaction__actions">
-              <p-button severity="secondary" [text]="true" [ariaLabel]="'Edytuj transakcję: ' + transaction.category" [disabled]="financeStore.saving() || !financeStore.accounts().length" (onClick)="successMessage.set(null); transactionDialog.open(transaction)">
+              <p-button severity="secondary" [text]="true" [ariaLabel]="'Edytuj transakcję: ' + transaction.category" [disabled]="financeStore.saving()" (onClick)="successMessage.set(null); transactionDialog.open(transaction, selectedAccount.id)">
                 <ng-template #icon>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                     <path d="m16 3 5 5L8 21H3v-5L16 3Z" />
@@ -113,6 +117,10 @@
         }
       </section>
       <app-transfer-history idPrefix="account-transfers" [transfers]="transfers()" />
+      <footer class="account-footer">
+        <p-button class="account-delete" label="Usuń konto" severity="danger" [outlined]="true" [disabled]="financeStore.saving()"
+          (onClick)="accountDeleteDialog.open({ id: selectedAccount.id, name: selectedAccount.name, kind: 'ORDINARY', balance: selectedAccount.currentBalance, currency: selectedAccount.currency })" />
+      </footer>
     </section>
   } @else if (loadState() === 'not-found') {
     <section class="not-found">

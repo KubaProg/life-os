@@ -140,7 +140,7 @@ public class TransferService {
                 yield new TransferSide(account, null, balances.calculateCurrentBalance(ordinary));
             }
             case DEPOSIT -> new TransferSide(account, investments.getOwned(id), null);
-            case BOND -> new TransferSide(account, null, bonds.cashBalance(id));
+            case BOND -> new TransferSide(account, null, bonds.availableToSpend(id, date));
             case BROKERAGE -> new TransferSide(account, null, brokerage.cashBalance(id));
         };
     }

@@ -1,12 +1,11 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 
 @Component({
   selector: 'app-main-page',
-  imports: [ButtonModule, CardModule, RouterLink, TagModule],
+  imports: [CardModule, RouterLink, TagModule],
   templateUrl: './main-page.html',
   styleUrl: './main-page.scss'
 })

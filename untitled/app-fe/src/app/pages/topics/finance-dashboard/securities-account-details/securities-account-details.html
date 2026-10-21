@@ -7,28 +7,35 @@
       <header>
         <p class="eyebrow">{{ selected.type === 'BOND' ? 'Konto obligacyjne' : 'Rachunek maklerski' }} · {{ selected.currency }}</p>
         <h1>{{ selected.name }}</h1>
+        <p-button label="Odśwież saldo i rozliczenia" icon="pi pi-refresh" severity="secondary" [outlined]="true"
+          [disabled]="store.saving()" (onClick)="refresh()" />
       </header>
       @if (success()) { <p-message severity="success" [text]="success()!" /> }
       <section class="panel" aria-labelledby="cash-title">
         <h2 id="cash-title">Dostępna gotówka</h2>
-        <strong class="balance">{{ selected.currentValue | currency: selected.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
+        <strong class="balance">{{ selected.deletionRefund | currency: selected.currency : 'symbol' : '1.2-2' : 'pl-PL' }}</strong>
         <p class="note">Środki na koncie, które nie zostały przeznaczone na zakup papierów wartościowych.</p>
         <div class="actions">
           <p-button label="Dopłać środki" [disabled]="store.saving() || store.loading()"
             (onClick)="transferDialog.open(null, null, { kind: accountKind(selected.type), id: selected.id })" />
-          <p-button label="Przenieś środki" severity="secondary" [outlined]="true" [disabled]="store.saving() || selected.currentValue <= 0"
+          <p-button label="Przenieś środki" severity="secondary" [outlined]="true" [disabled]="store.saving() || selected.deletionRefund <= 0"
             (onClick)="transferDialog.open({ kind: accountKind(selected.type), id: selected.id })" />
         </div>
       </section>
-      <section class="panel" aria-labelledby="positions-title">
-        <h2 id="positions-title">{{ selected.type === 'BOND' ? 'Posiadane obligacje' : 'Posiadane papiery wartościowe' }}</h2>
-        <p class="note">Dopłata zasila gotówkę konta. Zakup {{ selected.type === 'BOND' ? 'konkretnej serii obligacji' : 'ETF lub akcji' }} będzie osobną operacją. Formularz zakupu nie jest jeszcze dostępny.</p>
-      </section>
+      @if (selected.type === 'BOND') {
+        <app-bond-positions [accountId]="selected.id" [currency]="selected.currency" (saved)="refresh($event)" />
+      } @else {
+        <section class="panel" aria-labelledby="positions-title">
+          <h2 id="positions-title">Posiadane papiery wartościowe</h2>
+          <p class="note">Dopłata zasila gotówkę konta. Zakup ETF lub akcji będzie osobną operacją. Formularz zakupu nie jest jeszcze dostępny.</p>
+        </section>
+      }
       <app-transfer-history idPrefix="securities-account-transfers" [transfers]="transfers()" />
-      <div class="actions">
-        <p-button label="Usuń konto" severity="danger" [outlined]="true" [disabled]="store.saving()"
-          (onClick)="accountDeleteDialog.open({ id: selected.id, name: selected.name, kind: accountKind(selected.type), balance: selected.currentValue, currency: selected.currency })" />
-      </div>
+      <footer class="account-footer">
+        <p-button label="Usuń konto" severity="danger" [outlined]="true" [disabled]="store.saving() || (selected.type === 'BOND' && selected.principal > 0)"
+          (onClick)="accountDeleteDialog.open({ id: selected.id, name: selected.name, kind: accountKind(selected.type), balance: selected.deletionRefund, currency: selected.currency })" />
+      </footer>
+      @if (selected.type === 'BOND' && selected.principal > 0) { <p class="note">Przed usunięciem konta wykup obligacje i poczekaj na rozliczenie dyspozycji.</p> }
     } @else {
       <section class="panel" role="alert">
         <h1>{{ state() === 'not-found' ? 'Nie znaleziono konta' : 'Nie udało się pobrać konta' }}</h1>

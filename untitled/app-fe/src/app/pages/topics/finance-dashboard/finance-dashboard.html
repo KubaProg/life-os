@@ -50,7 +50,7 @@
               <p class="summary-note">Brak inwestycji</p>
             }
             <p class="summary-note">{{ (profit.month + '-01') | date: 'LLLL y' : undefined : 'pl-PL' }}</p>
-            <p class="summary-note">Po szacowanym podatku</p>
+            <p class="summary-note">Lokaty i obligacje · po szacowanym podatku</p>
             @if (profit.mocked) {
               <p class="summary-note">Dane przykładowe</p>
             }
@@ -126,7 +126,8 @@
               <span class="account__mark account__mark--investment">{{ investmentTypeLabel(investment.type).charAt(0) }}</span>
               <div><h3>{{ investment.name }}</h3>
                 <p>{{ investmentTypeLabel(investment.type) }} · {{ investment.currency }} · {{ investmentStatusLabel(investment.status) }}</p>
-                @if (investment.type !== 'DEPOSIT') { <p>Dostępna gotówka</p> }
+                @if (investment.type === 'BOND') { <p>Gotówka i obligacje po szacowanym podatku</p> }
+                @else if (investment.type !== 'DEPOSIT') { <p>Dostępna gotówka</p> }
                 @else if (investment.status !== 'DRAFT') { <p>Wartość po szacowanym podatku</p> }</div>
               <strong>{{ investment.status === 'DRAFT' ? 'Do konfiguracji' : (investment.currentValue | currency: investment.currency : 'symbol' : '1.2-2' : 'pl-PL') }}</strong>
             </a>

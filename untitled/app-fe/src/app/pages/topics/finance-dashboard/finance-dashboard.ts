@@ -16,6 +16,7 @@ import { AccountCreateDialog } from './account-create-dialog/account-create-dial
 import { TransferDialog } from './transfer-dialog/transfer-dialog';
 import { TransferHistory } from './transfer-history/transfer-history';
 import { TransactionDialog } from './transaction-dialog/transaction-dialog';
+import { todayDate } from '../../../utils/date';
 
 @Component({
   selector: 'app-finance-dashboard',
@@ -40,8 +41,8 @@ export class FinanceDashboard {
   ] as const;
 
   private initialMonth(): Date {
-    const month = this.financeStore.summaryMonth() ?? this.financeStore.monthlySummary()?.month
-      ?? new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit' }).format(new Date());
+    const month = this.financeStore.summaryMonth();
+    if (!month) return todayDate();
     const [year, monthNumber] = month.split('-').map(Number);
     return new Date(year, monthNumber - 1, 1);
   }

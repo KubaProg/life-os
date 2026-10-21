@@ -10,6 +10,7 @@
     (visibleChange)="setTransactionDialogVisible($event)"
   >
     <form class="transaction-form" [formGroup]="transactionForm" (ngSubmit)="submitTransaction()">
+      @if (fixedAccountId() === null) {
       <div class="form-field">
         <label for="transaction-account">Konto</label>
         <p-select inputId="transaction-account" formControlName="accountId" [options]="accountOptions()" optionLabel="name" optionValue="id" placeholder="Wybierz konto" appendTo="body" />
@@ -17,6 +18,7 @@
           <small>Wybierz konto.</small>
         }
       </div>
+      }
 
       <div class="form-field">
         <label for="transaction-type">Rodzaj</label>
@@ -34,7 +36,7 @@
 
         <div class="form-field">
           <label for="transaction-date">Data</label>
-          <p-datepicker inputId="transaction-date" formControlName="transactionDate" dateFormat="dd.mm.yy" [maxDate]="today" [showIcon]="true" appendTo="body" />
+          <p-datepicker inputId="transaction-date" formControlName="transactionDate" dateFormat="dd.mm.yy" [maxDate]="today()" [showIcon]="true" appendTo="body" />
         </div>
       </div>
 

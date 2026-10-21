@@ -13,3 +13,6 @@ h2 { font-size: 1.2rem; margin-top: 0; }
 .load-state { padding: 3rem 0; text-align: center; }
 @media (min-width: 480px) { .actions { flex-direction: row; flex-wrap: wrap; } }
 @media (min-width: 960px) { .account-shell { padding: 2.5rem; } }
+
+.account-footer { display: flex; justify-content: flex-end; margin-top: 1.5rem; }
+:host ::ng-deep .account-footer .p-button { min-height: 44px; }

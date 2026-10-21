@@ -56,3 +56,8 @@ h2 { margin-bottom: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); }
 :host ::ng-deep .opening-field .p-inputtext { width: 100%; min-width: 0; min-height: 44px; }
 :host ::ng-deep .opening-form .p-button { min-height: 44px; }
 :host ::ng-deep .account-delete .p-button { min-height: 44px; }
+
+.account-footer { display: flex; justify-content: flex-end; margin-top: 1.5rem; }
+.transactions-panel .section-heading { flex-wrap: wrap; margin-bottom: 1rem; }
+:host ::ng-deep .section-heading .p-button { min-height: 44px; }
+:host ::ng-deep .account-footer .p-button { min-height: 44px; }

@@ -1,16 +1,26 @@
-<p-dialog header="Przenieś środki" [modal]="true" [visible]="visible()" (visibleChange)="close($event)"
+<p-dialog [header]="fixedDestinationKey() ? 'Dopłać środki' : 'Przenieś środki'" [modal]="true" [visible]="visible()" (visibleChange)="close($event)"
   [closable]="!store.saving()" [closeOnEscape]="!store.saving()" [draggable]="false"
   [style]="{ width: 'min(36rem, calc(100vw - 2rem))' }">
   <form [formGroup]="form" (ngSubmit)="submit()" class="investment-form">
-    <p class="note">Przeniesienie kapitału nie jest przychodem ani wydatkiem. Lokata jest finansowana przy tworzeniu i nie przyjmuje dopłat. Po jej zakończeniu możesz przenieść całą wartość na zwykłe konto w tej samej walucie.</p>
+    <p class="note">Przeniesienie środków między kontami nie jest przychodem ani wydatkiem. Oba konta muszą mieć tę samą walutę.</p>
+    @if (involvesDeposit()) {
+      <p class="note">Lokata przyjmuje jedną wpłatę kapitału i nie przyjmuje dopłat. Standardowa wypłata po terminie zakończenia obejmuje kapitał i odsetki po podatku.</p>
+    } @else if (involvesBondAccount()) {
+      <p class="note">Dopłata na konto obligacyjne zasila dostępną gotówkę. Zakup obligacji jest osobną operacją.</p>
+    }
+    @if (fixedDestination(); as destination) {
+      <p class="note">Na konto: <strong>{{ destination.label }}</strong></p>
+    }
     <div class="field"><label for="transfer-source">Z rachunku</label>
-      <p-select inputId="transfer-source" formControlName="source" [options]="endpoints()" optionLabel="label" optionValue="key" appendTo="body" /></div>
+      <p-select inputId="transfer-source" formControlName="source" [options]="sourceOptions()" optionLabel="label" optionValue="key" appendTo="body" /></div>
+    @if (fixedDestinationKey() === null) {
     <div class="field"><label for="transfer-destination">Na rachunek</label>
       <p-select inputId="transfer-destination" formControlName="destination" [options]="endpoints()" optionLabel="label" optionValue="key" appendTo="body" /></div>
+    }
     <div class="field"><label for="transfer-amount">Kwota w walucie rachunków</label>
       <p-inputnumber inputId="transfer-amount" formControlName="amount" locale="pl-PL" [min]="0.01" [minFractionDigits]="2" [maxFractionDigits]="2" /></div>
     <div class="field"><label for="transfer-date">Data</label>
-      <p-datepicker inputId="transfer-date" formControlName="date" dateFormat="dd.mm.yy" [readonlyInput]="true" [maxDate]="today" appendTo="body" /></div>
+      <p-datepicker inputId="transfer-date" formControlName="date" dateFormat="dd.mm.yy" [readonlyInput]="true" [maxDate]="today()" appendTo="body" /></div>
     @if (error()) { <p-message severity="error" [text]="error()!" /> }
     <div class="actions">
       <p-button label="Anuluj" type="button" severity="secondary" [outlined]="true" [disabled]="store.saving()" (onClick)="close(false)" />

@@ -15,7 +15,10 @@
 
     <div class="tile-grid" aria-label="Główne sekcje aplikacji">
       @for (tile of tiles; track tile.title) {
-        <p-card class="tile" [class.tile--active]="tile.active" [attr.aria-label]="tile.title + (tile.active ? '' : ' — dostępne wkrótce')">
+        <a class="tile-link" [routerLink]="tile.active ? tile.route : null"
+          [attr.aria-label]="tile.title + (tile.active ? '' : ' — dostępne wkrótce')"
+          [attr.aria-disabled]="tile.active ? null : 'true'" [attr.tabindex]="tile.active ? 0 : -1">
+        <p-card class="tile" [class.tile--active]="tile.active">
           <ng-template #header>
             <div class="tile__topline">
               <span class="tile__icon" aria-hidden="true">
@@ -33,9 +36,10 @@
           <div class="tile__content"><h2>{{ tile.title }}</h2><p>{{ tile.description }}</p></div>
 
           <ng-template #footer>
-            <p-button class="tile__action" [label]="tile.active ? 'Otwórz sekcję →' : 'W przygotowaniu'" [disabled]="!tile.active" [routerLink]="tile.active ? tile.route : null" [text]="true" severity="secondary" />
+            <span class="tile__action">{{ tile.active ? 'Otwórz sekcję →' : 'W przygotowaniu' }}</span>
           </ng-template>
         </p-card>
+        </a>
       }
     </div>
 

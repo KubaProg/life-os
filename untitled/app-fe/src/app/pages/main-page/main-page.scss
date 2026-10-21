@@ -10,6 +10,9 @@
 h1 { max-width: 12ch; margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(2.5rem, 8vw, 5.25rem); font-weight: 500; letter-spacing: -.055em; line-height: .98; }
 .welcome__copy { max-width: 34rem; margin: 1.25rem 0 0; color: #647168; font-size: clamp(1rem, 2vw, 1.125rem); line-height: 1.6; }
 .tile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(.75rem, 2.5vw, 1.5rem); }
+.tile-link { display: block; min-width: 0; color: inherit; text-decoration: none; border-radius: clamp(1.25rem, 3vw, 2rem); }
+.tile-link:focus-visible { outline: 3px solid #4c9a68; outline-offset: 4px; }
+.tile-link[aria-disabled="true"] { cursor: default; }
 .tile { display: block; min-height: clamp(12rem, 30vw, 17rem); transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
 :host ::ng-deep .tile.p-card { display: flex; min-height: inherit; flex-direction: column; overflow: hidden; border: 1px solid #dce2dc; border-radius: clamp(1.25rem, 3vw, 2rem); background: rgba(255, 255, 255, .72); box-shadow: 0 1rem 3rem rgba(38, 57, 46, .05); }
 :host ::ng-deep .tile.p-card > .p-card-header { padding: clamp(1.1rem, 3.5vw, 2rem) clamp(1.1rem, 3.5vw, 2rem) 0; }
@@ -26,9 +29,8 @@ h1 { max-width: 12ch; margin: 0; font-family: Georgia, 'Times New Roman', serif;
 .tile__content h2 { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(1.4rem, 4vw, 2.3rem); font-weight: 500; letter-spacing: -.035em; }
 .tile__content p { margin: 0; color: #758077; font-size: clamp(.76rem, 2vw, .95rem); line-height: 1.45; }
 .tile--active .tile__content p { color: #b9cbbf; }
-:host ::ng-deep .tile__action .p-button { justify-content: flex-start; padding: .35rem 0; font-size: clamp(.72rem, 2vw, .86rem); }
-:host ::ng-deep .tile--active .tile__action .p-button { color: #e4f1e6; }
-:host ::ng-deep .tile--active .tile__action .p-button:hover { background: rgba(255, 255, 255, .08); }
+.tile__action { display: inline-flex; align-items: center; min-height: 44px; padding: .35rem 0; color: #758077; font-size: clamp(.72rem, 2vw, .86rem); }
+.tile--active .tile__action { color: #e4f1e6; }
 .home__footer { display: flex; align-items: center; gap: .55rem; margin-top: 1.5rem; color: #6d786f; font-size: .8rem; }
 .status-dot { width: .5rem; height: .5rem; border-radius: 50%; background: #4c9a68; box-shadow: 0 0 0 .22rem rgba(76, 154, 104, .14); }
 @media (max-width: 480px) { .home-shell { padding-inline: 1rem; } .tile { min-height: 11.25rem; } .tile__content p { display: none; } }

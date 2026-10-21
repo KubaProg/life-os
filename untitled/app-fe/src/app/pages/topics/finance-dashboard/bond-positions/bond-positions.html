@@ -1,0 +1,114 @@
+<section class="panel" aria-labelledby="bond-positions-title">
+  <div class="heading">
+    <h2 id="bond-positions-title">Posiadane obligacje</h2>
+    <p-button label="Kup obligacje" icon="pi pi-plus" [disabled]="loading() || store.saving() || currency() !== 'PLN' || !details()" (onClick)="openPurchase()" />
+  </div>
+  @if (currency() !== 'PLN') { <p class="note">Zakup TOS jest dostępny na koncie obligacyjnym w PLN.</p> }
+  @if (loading()) { <p role="status">Ładowanie obligacji…</p> }
+  @if (error()) {
+    <p-message severity="error" [text]="error()!" />
+    <p-button label="Spróbuj ponownie" severity="secondary" (onClick)="load()" />
+  }
+  @if (details(); as data) {
+    <dl class="metrics">
+      <div><dt>Kapitał pozostałych obligacji</dt><dd>{{ data.principal | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+      <div><dt>Wartość obligacji brutto</dt><dd>{{ data.grossValue | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+      <div><dt>Zysk brutto pozostałych sztuk</dt><dd>{{ data.grossProfit | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+      <div><dt>Szacowany podatek przy wykupie</dt><dd>{{ data.estimatedTax | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+      <div><dt>Zysk netto pozostałych sztuk</dt><dd>{{ data.netProfit | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+      <div><dt>Zysk netto już wypłacony</dt><dd>{{ data.realizedProfit | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+    </dl>
+    <p class="note">Bieżąca wartość uwzględnia szacowany podatek, bez opłaty za wcześniejszy wykup. Gotówka jest prezentowana osobno. Sztuki zgłoszone do wykupu pozostają w portfelu do dnia rozliczenia.</p>
+    <div class="positions">
+      @for (position of data.positions; track position.id) {
+        <article class="position">
+          <h3>{{ position.issueCode }} · {{ position.annualRate | number:'1.2-2':'pl-PL' }}% · partia #{{ position.id }}</h3>
+          <p class="note">Zakup {{ position.purchaseDate | date:'dd.MM.yyyy' }} · wykup {{ position.maturityDate | date:'dd.MM.yyyy' }}</p>
+          <dl class="metrics">
+            <div><dt>Pozostało</dt><dd>{{ position.remainingQuantity }} z {{ position.originalQuantity }} szt.</dd></div>
+            <div><dt>Kapitał pozostałych sztuk</dt><dd>{{ position.principal | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+            <div><dt>Wartość netto</dt><dd>{{ position.currentValue | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+            <div><dt>Zysk netto pozostałych sztuk</dt><dd>{{ position.netProfit | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+          </dl>
+          @if (position.pendingQuantity > 0) { <p class="note">{{ position.pendingQuantity }} szt. oczekuje na rozliczenie wykupu.</p> }
+          @if (position.remainingQuantity > 0) {
+            <p-button label="Wykup część lub całość" severity="secondary" [outlined]="true"
+              [disabled]="store.saving() || !position.canRedeem" (onClick)="openRedemption(position)" />
+            @if (!position.canRedeem && position.availableQuantity > 0) {
+              <p class="note">Przedterminowy wykup: od {{ position.earliestRedemptionDate | date:'dd.MM.yyyy' }} do {{ position.latestRedemptionDate | date:'dd.MM.yyyy' }}. W terminie zapadalności rozliczenie nastąpi automatycznie.</p>
+            }
+          } @else { <p class="note">Partia została w całości rozliczona.</p> }
+        </article>
+      } @empty { <p class="note">Nie masz jeszcze obligacji. Dopłać środki na konto i kup wybraną liczbę sztuk TOS.</p> }
+    </div>
+  }
+</section>
+@if (details(); as data) {
+  <section class="panel" aria-labelledby="bond-history-title">
+    <h2 id="bond-history-title">Historia obligacji</h2>
+    <ol class="history">
+      @for (operation of data.operations; track operation.id) {
+        <li>
+          <strong>{{ operationLabel(operation.type) }} · {{ operation.issueCode }} · partia #{{ operation.bondId }} · {{ operation.quantity }} szt.</strong>
+          <p>Dyspozycja {{ operation.instructionDate | date:'dd.MM.yyyy' }} · rozliczenie {{ operation.settlementDate | date:'dd.MM.yyyy' }}
+            · {{ operation.status === 'PENDING' ? 'Oczekuje na rozliczenie' : 'Rozliczono' }}</p>
+          @if (operation.type === 'PURCHASE') {
+            <p>Zakup: {{ operation.principal | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</p>
+          } @else if (operation.type === 'CAPITALIZATION') {
+            <p>Skapitalizowane odsetki: {{ operation.grossInterest | currency:'PLN':'symbol':'1.2-2':'pl-PL' }} · bez wypłaty gotówki</p>
+          } @else {
+            <p>Kapitał: {{ operation.principal | currency:'PLN':'symbol':'1.2-2':'pl-PL' }} · odsetki: {{ operation.grossInterest | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}
+              · opłata: {{ operation.fee | currency:'PLN':'symbol':'1.2-2':'pl-PL' }} · podatek: {{ operation.tax | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</p>
+            <p>{{ operation.status === 'PENDING' ? 'Do wypłaty' : 'Wypłacono' }}: {{ operation.netCash | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</p>
+          }
+        </li>
+      } @empty { <li>Brak operacji obligacyjnych.</li> }
+    </ol>
+  </section>
+}
+<p-dialog [header]="mode() === 'purchase' ? 'Kup obligacje TOS' : 'Przedterminowy wykup obligacji'"
+  [visible]="mode() !== null" (visibleChange)="close($event)" [modal]="true" [draggable]="false" [resizable]="false"
+  [closable]="!store.saving() && !quoting()" [closeOnEscape]="!store.saving() && !quoting()"
+  [style]="{ width: '34rem', maxWidth: 'calc(100vw - 2rem)' }">
+  <form [formGroup]="form" (ngSubmit)="preview()" class="bond-form">
+    @if (mode() === 'purchase') {
+      <label for="bond-issue">Emisja</label>
+      <p-select inputId="bond-issue" formControlName="issueId" [options]="issues()" optionLabel="code" optionValue="id" appendTo="body" />
+      @for (issue of issues(); track issue.id) {
+        @if (form.controls.issueId.value === issue.id) {
+          <p class="note">TOS · {{ issue.durationYears }} lata · {{ issue.annualRate | number:'1.2-2':'pl-PL' }}% rocznie · kapitalizacja roczna · {{ issue.unitPrice | currency:'PLN':'symbol':'1.2-2':'pl-PL' }} za sztukę.
+            Podatek {{ issue.taxRate | number:'1.0-0' }}% przy wykupie. Sprzedaż {{ issue.saleFrom | date:'dd.MM.yyyy' }}–{{ issue.saleUntil | date:'dd.MM.yyyy' }}.
+            <a [href]="issue.sourceUrl" target="_blank" rel="noopener noreferrer">Warunki emisji</a></p>
+        }
+      }
+    } @else { <p>{{ selectedPosition()?.issueCode }} · dostępne {{ selectedPosition()?.availableQuantity }} szt.</p> }
+    <label for="bond-quantity">Liczba sztuk</label>
+    <p-inputnumber inputId="bond-quantity" formControlName="quantity" [min]="1" [max]="mode() === 'redemption' ? (selectedPosition()?.availableQuantity ?? 1) : 1000000" [maxFractionDigits]="0" [useGrouping]="false" />
+    <label for="bond-date">{{ mode() === 'purchase' ? 'Data zakupu' : 'Data dyspozycji' }}</label>
+    <p-datepicker inputId="bond-date" formControlName="date" dateFormat="dd.mm.yy" [showIcon]="true" [maxDate]="today()"
+      [minDate]="mode() === 'redemption' ? today() : undefined" appendTo="body" />
+    @if (formError()) { <p-message severity="error" [text]="formError()!" /> }
+    <p-button type="submit" [label]="mode() === 'purchase' ? 'Sprawdź zakup' : 'Oblicz kwotę wykupu'" severity="secondary" [outlined]="true" [loading]="quoting()" [disabled]="store.saving() || quoting()" />
+    @if (purchaseQuote(); as quote) {
+      <dl class="metrics">
+        <div><dt>Koszt zakupu</dt><dd>{{ quote.cost | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+        <div><dt>Dostępna gotówka dla tej daty</dt><dd>{{ quote.availableCash | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+        <div><dt>Termin wykupu</dt><dd>{{ quote.maturityDate | date:'dd.MM.yyyy' }}</dd></div>
+      </dl>
+      @if (!quote.sufficientFunds) { <p-message severity="warn" text="Brakuje środków. Dopłać gotówkę na to konto przed zakupem." /> }
+      <p-button label="Potwierdź zakup" [loading]="store.saving()" [disabled]="!quote.sufficientFunds || store.saving() || quoting()" (onClick)="confirm()" />
+    }
+    @if (redemptionQuote(); as quote) {
+      <dl class="metrics">
+        <div><dt>Kapitał</dt><dd>{{ quote.principal | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+        <div><dt>Odsetki brutto</dt><dd>{{ quote.grossInterest | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+        <div><dt>Opłata</dt><dd>{{ quote.fee | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+        <div><dt>Podatek</dt><dd>{{ quote.tax | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+        <div><dt>Na to konto wróci</dt><dd>{{ quote.netCash | currency:'PLN':'symbol':'1.2-2':'pl-PL' }}</dd></div>
+        <div><dt>Data rozliczenia</dt><dd>{{ quote.settlementDate | date:'dd.MM.yyyy' }}</dd></div>
+      </dl>
+      <p class="note">Dyspozycja jest nieodwołalna. Do rozliczenia wybrane sztuki są zarezerwowane, a pieniądze pozostają niedostępne. Po rozliczeniu kapitał i bieżący zysk partii obejmą tylko pozostałe sztuki.</p>
+      <p-button label="Zleć wykup" [loading]="store.saving()" [disabled]="store.saving() || quoting()" (onClick)="confirm()" />
+    }
+  </form>
+</p-dialog>

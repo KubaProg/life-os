@@ -3,6 +3,7 @@ package com.example.appbe.finance.investment;
 import com.example.appbe.finance.account.AccountKind;
 import com.example.appbe.finance.account.AccountRepository;
 import com.example.appbe.finance.bond.BondAccountService;
+import com.example.appbe.finance.bond.BondService;
 import com.example.appbe.finance.brokerage.BrokerageAccountService;
 import com.example.appbe.finance.overview.InvestmentProfitDto;
 import com.example.appbe.finance.overview.MoneyTotalDto;
@@ -22,9 +23,11 @@ public class InvestmentQueryService {
     private final BondAccountService bonds;
     private final BrokerageAccountService brokerage;
     private final AccountRepository accounts;
+    private final BondService bondPositions;
     public InvestmentQueryService(DepositQueryService deposits, BondAccountService bonds,
-            BrokerageAccountService brokerage, AccountRepository accounts) {
+            BrokerageAccountService brokerage, AccountRepository accounts, BondService bondPositions) {
         this.deposits = deposits; this.bonds = bonds; this.brokerage = brokerage; this.accounts = accounts;
+        this.bondPositions = bondPositions;
     }
     public User lockOwner() { return deposits.lockOwner(); }
     public AccountKind kind(Long id) {
@@ -42,8 +45,16 @@ public class InvestmentQueryService {
         result.sort(Comparator.comparing(InvestmentDto::id));
         Map<String, BigDecimal> totals = new TreeMap<>();
         result.forEach(account -> totals.merge(account.currency(), account.currentValue(), BigDecimal::add));
+        var bondMonth = bondPositions.monthly(month);
+        List<MoneyTotalDto> profit = mergePln(depositSnapshot.profit().totals(), bondMonth.profit(), bondMonth.hasInvestments());
         return new Snapshot(result, totals.entrySet().stream().map(entry -> new MoneyTotalDto(entry.getKey(), entry.getValue())).toList(),
-                depositSnapshot.profit(), depositSnapshot.paidIncome());
+                new InvestmentProfitDto(month, false, profit), mergePln(depositSnapshot.paidIncome(), bondMonth.paidIncome(), false));
+    }
+    private List<MoneyTotalDto> mergePln(List<MoneyTotalDto> values, BigDecimal pln, boolean includeZero) {
+        Map<String, BigDecimal> result = new TreeMap<>();
+        values.forEach(value -> result.merge(value.currency(), value.amount(), BigDecimal::add));
+        if (includeZero || pln.signum() != 0) result.merge("PLN", pln, BigDecimal::add);
+        return result.entrySet().stream().map(e -> new MoneyTotalDto(e.getKey(), e.getValue())).toList();
     }
     public InvestmentDetailsDto details(Long id) {
         return switch (kind(id)) {

@@ -7,6 +7,7 @@ import { SelectModule } from 'primeng/select';
 
 import { AccountDto } from '../../../../models/account.model';
 import { TransactionDto, TransactionType } from '../../../../models/transaction.model';
+import { todayDate } from '../../../../utils/date';
 
 @Component({
   selector: 'app-transaction-history-filters',
@@ -22,7 +23,7 @@ export class TransactionHistoryFilters {
   readonly idPrefix = input.required<string>();
   protected readonly collapsed = signal(true);
 
-  protected readonly selectedMonth = signal<Date | null>(null);
+  protected readonly selectedMonth = signal<Date | null>(todayDate());
   protected readonly selectedType = signal<TransactionType | null>(null);
   protected readonly selectedAccountId = signal<number | null>(null);
   protected readonly typeOptions = [

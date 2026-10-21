@@ -15,6 +15,7 @@ import { Observable } from 'rxjs';
 import { TransactionCreatedResponse, TransactionUpdatedResponse } from '../../../../models/finance-overview.model';
 import { TransactionDto, TransactionRequest, TransactionType } from '../../../../models/transaction.model';
 import { FinanceStore } from '../../../../services/finance.store';
+import { todayDate } from '../../../../utils/date';
 
 @Component({
   selector: 'app-transaction-dialog',
@@ -41,7 +42,8 @@ export class TransactionDialog {
   protected readonly saveError = signal<string | null>(null);
   readonly saved = output<string>();
   protected readonly editingTransaction = signal<TransactionDto | null>(null);
-  protected readonly today = new Date();
+  protected readonly fixedAccountId = signal<number | null>(null);
+  protected readonly today = signal(todayDate());
   protected readonly accountOptions = computed(() => [...this.financeStore.accounts()]);
   protected readonly transactionTypes: Array<{
     label: string;
@@ -58,7 +60,7 @@ export class TransactionDialog {
       Validators.required,
       Validators.min(0.0001)
     ]),
-    transactionDate: this.formBuilder.control<Date | null>(new Date(), Validators.required),
+    transactionDate: this.formBuilder.control<Date | null>(todayDate(), Validators.required),
     category: this.formBuilder.nonNullable.control('', [
       Validators.required,
       Validators.pattern(/\S/),
@@ -71,22 +73,27 @@ export class TransactionDialog {
     this.financeStore.ensureOverviewLoaded();
   }
 
-  open(transaction: TransactionDto | null = null): void {
+  open(transaction: TransactionDto | null = null, contextAccountId: number | null = null): void {
     if (this.financeStore.saving() || transaction?.accountDeleted) {
       return;
     }
-    const accountId = transaction?.accountId ?? this.financeStore.accounts()[0]?.id;
+    if (transaction && contextAccountId !== null && transaction.accountId !== contextAccountId) {
+      return;
+    }
+    const accountId = contextAccountId ?? transaction?.accountId ?? this.financeStore.accounts()[0]?.id;
     if (accountId === undefined) {
       return;
     }
     this.editingTransaction.set(transaction);
+    this.today.set(todayDate());
+    this.fixedAccountId.set(contextAccountId);
     const date = transaction?.transactionDate;
     const parts = date?.split('-').map(Number);
     this.transactionForm.reset({
       accountId,
       type: transaction?.type ?? 'EXPENSE',
       amount: transaction?.amount ?? null,
-      transactionDate: parts ? new Date(parts[0], parts[1] - 1, parts[2]) : new Date(),
+      transactionDate: parts ? new Date(parts[0], parts[1] - 1, parts[2]) : todayDate(),
       category: transaction?.category ?? '',
       description: transaction?.description ?? ''
     });
@@ -121,7 +128,7 @@ export class TransactionDialog {
     }
 
     const request: TransactionRequest = {
-      accountId: value.accountId,
+      accountId: this.fixedAccountId() ?? value.accountId,
       type: value.type,
       amount: value.amount,
       transactionDate: this.formatLocalDate(value.transactionDate),

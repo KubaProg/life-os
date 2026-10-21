@@ -14,12 +14,15 @@ import { AccountDeletedResponse, AccountDto, AccountRequest, DeleteAccountReques
 import { AccountApiService } from './account-api.service';
 import { InvestmentApiService } from './investment-api.service';
 import { FinanceApiService } from './finance-api.service';
+import { BondApiService } from './bond-api.service';
+import { BondPurchaseRequest, BondRedemptionRequest } from '../models/bond.model';
 
 @Injectable({ providedIn: 'root' })
 export class FinanceStore {
   private readonly financeApi = inject(FinanceApiService);
   private readonly investmentApi = inject(InvestmentApiService);
   private readonly accountApi = inject(AccountApiService);
+  private readonly bondApi = inject(BondApiService);
 
   private readonly overviewState = signal<FinanceOverviewDto | null>(null);
   private readonly loadingState = signal(false);
@@ -188,6 +191,22 @@ export class FinanceStore {
     if (this.summaryMonthState() && overview.monthlySummary.month !== this.summaryMonthState()) {
       this.loadOverview();
     }
+  }
+
+  purchaseBonds(accountId: number, request: BondPurchaseRequest): Observable<InvestmentMutationResponse> {
+    this.savingState.set(true);
+    return this.bondApi.purchase(accountId, request, this.summaryMonthState()).pipe(
+      tap(response => this.applyMutationSnapshot(response.overview)),
+      finalize(() => this.savingState.set(false))
+    );
+  }
+
+  redeemBonds(accountId: number, bondId: number, request: BondRedemptionRequest): Observable<InvestmentMutationResponse> {
+    this.savingState.set(true);
+    return this.bondApi.redeem(accountId, bondId, request, this.summaryMonthState()).pipe(
+      tap(response => this.applyMutationSnapshot(response.overview)),
+      finalize(() => this.savingState.set(false))
+    );
   }
 
   private loadOverview(): void {

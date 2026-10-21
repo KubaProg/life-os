@@ -11,6 +11,7 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { FinanceStore } from '../../../../services/finance.store';
 import { InvestmentDto } from '../../../../models/investment.model';
+import { todayDate } from '../../../../utils/date';
 
 @Component({
   selector: 'app-deposit-dialog',
@@ -30,23 +31,24 @@ export class DepositDialog {
   protected readonly accounts = computed(() => this.store.accounts().filter(account => account.currency === this.investment()?.currency).map(account => ({
     ...account, label: `${account.name} · ${account.currency}`
   })));
-  protected readonly today = new Date();
+  protected readonly today = signal(todayDate());
   protected readonly form = this.fb.group({
     name: this.fb.nonNullable.control('', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(160)]),
     sourceAccountId: this.fb.control<number | null>(null, Validators.required),
     principal: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
     annualRate: this.fb.control<number | null>(null, [Validators.required, Validators.min(0), Validators.max(100)]),
     taxRate: this.fb.control<number | null>(19, [Validators.required, Validators.min(0), Validators.max(100)]),
-    startDate: this.fb.control<Date | null>(new Date(), Validators.required),
-    maturityDate: this.fb.control<Date | null>(null, Validators.required)
+    startDate: this.fb.control<Date | null>(todayDate(), Validators.required),
+    maturityDate: this.fb.control<Date | null>(todayDate(), Validators.required)
   });
 
   open(investment: InvestmentDto): void {
     if (this.store.saving()) return;
+    this.today.set(todayDate());
     this.investment.set(investment);
     this.requestId = crypto.randomUUID();
     this.form.reset({ name: investment.name, sourceAccountId: this.accounts()[0]?.id ?? null, principal: null,
-      annualRate: null, taxRate: 19, startDate: new Date(), maturityDate: null });
+      annualRate: null, taxRate: 19, startDate: todayDate(), maturityDate: todayDate() });
     this.error.set(null);
     this.visible.set(true);
   }

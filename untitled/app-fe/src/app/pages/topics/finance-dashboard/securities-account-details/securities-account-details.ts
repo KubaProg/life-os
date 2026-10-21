@@ -13,10 +13,11 @@ import { InvestmentApiService } from '../../../../services/investment-api.servic
 import { AccountDeleteDialog } from '../account-delete-dialog/account-delete-dialog';
 import { TransferDialog } from '../transfer-dialog/transfer-dialog';
 import { TransferHistory } from '../transfer-history/transfer-history';
+import { BondPositions } from '../bond-positions/bond-positions';
 
 @Component({
   selector: 'app-securities-account-details',
-  imports: [CurrencyPipe, RouterLink, ButtonModule, MessageModule, ProgressSpinnerModule, AccountDeleteDialog, TransferDialog, TransferHistory],
+  imports: [CurrencyPipe, RouterLink, ButtonModule, MessageModule, ProgressSpinnerModule, AccountDeleteDialog, TransferDialog, TransferHistory, BondPositions],
   templateUrl: './securities-account-details.html',
   styleUrl: './securities-account-details.scss'
 })
@@ -64,6 +65,7 @@ export class SecuritiesAccountDetails {
   }
   protected refresh(message?: string): void {
     if (message) this.success.set(message);
+    this.store.refreshOverview();
     this.reload.next();
   }
 }

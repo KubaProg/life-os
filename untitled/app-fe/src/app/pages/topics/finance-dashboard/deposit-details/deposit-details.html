@@ -6,8 +6,6 @@
     } @else if (details(); as data) {
       <header><p class="eyebrow">{{ typeLabel(data.investment.type) }} · {{ data.investment.currency }}</p><h1>{{ data.investment.name }}</h1>
         <p>{{ statusLabel(data.investment.status) }}</p></header>
-      <p-button label="Usuń konto" severity="danger" [outlined]="true" [disabled]="store.saving()"
-        (onClick)="accountDeleteDialog.open({ id: data.investment.id, name: data.investment.name, kind: 'DEPOSIT', balance: data.investment.deletionRefund, currency: data.investment.currency })" />
       @if (success()) { <p-message severity="success" [text]="success()!" /> }
       @if (data.investment.status === 'DRAFT') {
         <section class="panel" aria-labelledby="setup-title">
@@ -51,6 +49,10 @@
         }
       </section>
       }
+      <footer class="account-footer">
+        <p-button label="Usuń konto" severity="danger" [outlined]="true" [disabled]="store.saving()"
+          (onClick)="accountDeleteDialog.open({ id: data.investment.id, name: data.investment.name, kind: 'DEPOSIT', balance: data.investment.deletionRefund, currency: data.investment.currency })" />
+      </footer>
     } @else {
       <section class="panel" role="alert"><h1>{{ state() === 'not-found' ? 'Nie znaleziono inwestycji' : 'Nie udało się pobrać inwestycji' }}</h1>
         <p-button label="Spróbuj ponownie" [outlined]="true" (onClick)="refresh()" /></section>

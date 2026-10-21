@@ -18,7 +18,7 @@
     </div>
     <div class="form-row">
       <div class="field"><label for="deposit-start">Początek (włącznie)</label>
-        <p-datepicker inputId="deposit-start" formControlName="startDate" dateFormat="dd.mm.yy" [maxDate]="today" [readonlyInput]="true" appendTo="body" /></div>
+        <p-datepicker inputId="deposit-start" formControlName="startDate" dateFormat="dd.mm.yy" [maxDate]="today()" [readonlyInput]="true" appendTo="body" /></div>
       <div class="field"><label for="deposit-end">Koniec (bez naliczania za ten dzień)</label>
         <p-datepicker inputId="deposit-end" formControlName="maturityDate" dateFormat="dd.mm.yy" [readonlyInput]="true" appendTo="body" /></div>
     </div>

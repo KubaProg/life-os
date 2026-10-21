@@ -54,6 +54,7 @@ public class AccountDeletionService {
                 .orElseThrow(() -> new InvestmentException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", "Nie znaleziono konta."));
         FinancialAccount financial = expectedKind == AccountKind.ORDINARY ? financialAccounts.findById(id).orElseThrow() : null;
         DepositAccount investment = expectedKind == AccountKind.DEPOSIT ? deposits.getOwned(id) : null;
+        if (expectedKind == AccountKind.BOND) bonds.requireNoPositions(id);
         BigDecimal balance = financial != null ? balances.calculateCurrentBalance(financial)
                 : investment != null ? investment.getRefundablePrincipal() : investments.details(id).investment().currentValue();
         if (balance.compareTo(request.expectedBalance()) != 0) {
